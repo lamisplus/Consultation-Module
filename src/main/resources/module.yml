@@ -1,0 +1,31 @@
+basePackage: org.lamisplus.modules.consultation
+name: ConsultationModule
+store: true
+menus:
+  - icon: flaticon-087-stop
+    disabled: false
+    name: Consultation
+    state: Consultation
+    url: /across/resources/static/consultation/index.html
+umdLocation: /across/resources/static/consultation/index.html
+webModules:
+  - breadcrumb: consultation
+    name: ConsultationModule
+    path: consultation
+    position: 99
+permissions:
+  - name: create_consultation
+    description: create consultation
+    moduleName: ConsultationModule
+  - name: view_consultation
+    description: view consultation
+    moduleName: ConsultationModule
+  - name: delete_consultation
+    description: delete consultation
+    moduleName: ConsultationModule
+  - name: lab_test_order
+    description: lab test order
+    moduleName: ConsultationModule
+  - name: pharmacy_order
+    description: pharmacy order
+    moduleName: ConsultationModule

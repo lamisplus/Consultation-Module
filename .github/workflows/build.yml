@@ -33,7 +33,7 @@ jobs:
       -  name: Configure Maven settings.xml
          run: |
           mkdir -p ~/.m2
-          echo "<settings> ... </settings>" > ~/.m2/settings.xml
+          echo "<settings> ... </settings>" > /settings.xml
 
       - name: Build with Maven
         run: mvn clean install --settings ~/.m2/settings.xml

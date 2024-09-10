@@ -30,6 +30,13 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      -  name: Configure Maven settings.xml
+         run: |
+          mkdir -p ~/.m2
+          echo "<settings> ... </settings>" > ~/.m2/settings.xml
+
+      - name: Build with Maven
+        run: mvn clean install --settings ~/.m2/settings.xml
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any

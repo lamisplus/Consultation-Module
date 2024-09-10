@@ -33,7 +33,46 @@ jobs:
       -  name: Configure Maven settings.xml
          run: |
           mkdir -p ~/.m2
-          echo "<settings> ... </settings>" > /settings.xml
+          chmod 755 ~/.m2 
+          echo "<settings> <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <mirrors>
+        <mirror>
+            <id>teams-http-repo</id>
+            <mirrorOf>*</mirrorOf>
+            <url>https://example.com/maven/repo</url>
+            <layout>default</layout>
+        </mirror>
+    </mirrors>
+
+    <servers>
+        <server>
+            <id>teams-http-repo</id>
+            <username>${env.USERNAME}</username>
+            <password>${env.PASSWORD}</password>
+        </server>
+    </servers>
+
+    <profiles>
+        <profile>
+            <id>teams-http-repo-profile</id>
+            <repositories>
+                <repository>
+                    <id>teams-http-repo</id>
+                    <url>https://example.com/maven/repo</url>
+                    <layout>default</layout>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+
+    <activeProfiles>
+        <activeProfile>teams-http-repo-profile</activeProfile>
+    </activeProfiles>
+</settings></settings>" > /settings.xml
 
       - name: Build with Maven
         run: mvn clean install --settings /settings.xml

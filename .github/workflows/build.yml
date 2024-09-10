@@ -36,7 +36,7 @@ jobs:
           echo "<settings> ... </settings>" > /settings.xml
 
       - name: Build with Maven
-        run: mvn clean install --settings ~/.m2/settings.xml
+        run: mvn clean install --settings /settings.xml
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any

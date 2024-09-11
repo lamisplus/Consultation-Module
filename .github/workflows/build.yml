@@ -17,14 +17,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Install dependencies - Download Google Drive files using a script
+    # Step 2: Download dependencies from Google Drive using the external script
     - name: Download dependencies from Google Drive
       run: |
-        mkdir -p ~/google-drive-downloads/
-        # This script should be part of your repo, it downloads files using Google Drive API or wget with shared links
-        chmod +x .github/scripts/download_from_gdrive.sh
-        .github/scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom
-        .github/scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar
+        chmod +x scripts/download_from_gdrive.sh
+        scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom
+        scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar
 
     # Step 3: Install the downloaded dependencies into the local Maven repository (~/.m2/repository)
     - name: Install dependencies locally
@@ -44,7 +42,7 @@ jobs:
     - name: Build with Maven
       run: mvn clean install
 
-    # Step 5: Run SonarQube analysis (if needed)
+    # Step 5: Build and analyze with SonarQube (if needed)
     - name: Build and analyze with SonarQube
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token to access the repo

@@ -1,16 +1,14 @@
-name: Maven Build
+name: Build
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
+      - master
 jobs:
   build:
-    runs-on:ubuntu-lateststeps:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
@@ -33,11 +31,10 @@ jobs:
       -  name: Configure Maven settings.xml
          run: |
           mkdir -p ~/.m2
-          chmod 755 ~/.m2 
-        
+          echo "<settings> ... </settings>" > ~/.m2/settings.xml
 
       - name: Build with Maven
-        run: mvn clean install --settings .github/workflows/setting.xml
+        run: mvn clean install --settings ~/.m2/settings.xml
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any

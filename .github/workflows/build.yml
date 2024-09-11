@@ -21,9 +21,10 @@ jobs:
     - name: Download dependencies from Google Drive
       run: |
         mkdir -p ~/google-drive-downloads/
-        # Use a script to download your Maven dependencies from Google Drive
-        bash download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom
-        bash download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar
+        # This script should be part of your repo, it downloads files using Google Drive API or wget with shared links
+        chmod +x .github/scripts/download_from_gdrive.sh
+        .github/scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom
+        .github/scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar
 
     # Step 3: Install the downloaded dependencies into the local Maven repository (~/.m2/repository)
     - name: Install dependencies locally
@@ -39,14 +40,15 @@ jobs:
           -Dversion=5.1.0.RELEASE \
           -Dpackaging=jar
 
-    # Step 4: Run Maven build with local repository
+    # Step 4: Build the project with Maven
     - name: Build with Maven
-      run: mvn clean install 
+      run: mvn clean install
 
-    # Step 5: Build and analyze with SonarQube
-    - name: Build and analyze
+    # Step 5: Run SonarQube analysis (if needed)
+    - name: Build and analyze with SonarQube
       env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=lamisplus_Consultation-Module_AZHboiDIwnahlNO_STa0
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token to access the repo
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # SonarQube authentication token
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}  # SonarQube host URL
+      run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=lamisplus_Consultation-Module_AZHboiDIwnahlNO_STa0

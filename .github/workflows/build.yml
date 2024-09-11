@@ -1,47 +1,43 @@
-name: Maven Build
+name: Build
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
+      - master
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
-
     steps:
-    # Step 1: Checkout the repository
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      -  name: Configure Maven settings.xml
+         run: |
+          mkdir -p ~/.m2
+          echo "<settings> ... </settings>" > ~/.m2/settings.xml
 
-    # Step 2: Install dependencies - Download Google Drive files using a script
-    - name: Download dependencies from Google Drive
-      run: |
-        mkdir -p ~/google-drive-downloads/
-        # Use curl or wget to download your Maven dependencies from Google Drive
-        # Example using wget with direct Google Drive download link
-        wget --no-check-certificate 'https://drive.google.com/drive/folders/1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he' -O ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom
-        wget --no-check-certificate 'https://drive.google.com/drive/folders/1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he' -O ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar
-
-    # Step 3: Install the downloaded dependencies into the local Maven repository (~/.m2/repository)
-    - name: Install dependencies locally
-      run: |
-        mvn install:install-file -Dfile=~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom \
-          -DgroupId=com.foreach.across \
-          -DartifactId=across-application-parent \
-          -Dversion=5.1.0.RELEASE \
-          -Dpackaging=pom
-        mvn install:install-file -Dfile=~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar \
-          -DgroupId=com.foreach.across \
-          -DartifactId=across-application-parent \
-          -Dversion=5.1.0.RELEASE \
-          -Dpackaging=jar
-
-    # Step 4: Run Maven build with local repository
-    - name: Build with Maven
-      run: mvn clean install 
-    - name: Build and analyze
-        
+      - name: Build with Maven
+        run: mvn clean install --settings ~/.m2/settings.xml
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=lamisplus_Consultation-Module_AZHboiDIwnahlNO_STa0

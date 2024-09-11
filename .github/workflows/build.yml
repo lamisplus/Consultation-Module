@@ -10,43 +10,37 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on:ubuntu-lateststeps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      -  name: Configure Maven settings.xml
+         run: |
+          mkdir -p ~/.m2
+          chmod 755 ~/.m2 
+        
 
-    steps:
-    # Step 1: Checkout the repository
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    # Step 2: Download dependencies from Google Drive using the external script
-    - name: Download dependencies from Google Drive
-      run: |
-        chmod +x scripts/download_from_gdrive.sh
-        scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom
-        scripts/download_from_gdrive.sh 1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he ~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar
-
-    # Step 3: Install the downloaded dependencies into the local Maven repository (~/.m2/repository)
-    - name: Install dependencies locally
-      run: |
-        mvn install:install-file -Dfile=~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.pom \
-          -DgroupId=com.foreach.across \
-          -DartifactId=across-application-parent \
-          -Dversion=5.1.0.RELEASE \
-          -Dpackaging=pom
-        mvn install:install-file -Dfile=~/google-drive-downloads/across-application-parent-5.1.0.RELEASE.jar \
-          -DgroupId=com.foreach.across \
-          -DartifactId=across-application-parent \
-          -Dversion=5.1.0.RELEASE \
-          -Dpackaging=jar
-
-    # Step 4: Build the project with Maven
-    - name: Build with Maven
-      run: mvn clean install
-
-    # Step 5: Build and analyze with SonarQube (if needed)
-    - name: Build and analyze with SonarQube
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token to access the repo
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # SonarQube authentication token
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}  # SonarQube host URL
-      run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=lamisplus_Consultation-Module_AZHboiDIwnahlNO_STa0
+      - name: Build with Maven
+        run: mvn clean install --settings .github/workflows/setting.xml
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=lamisplus_Consultation-Module_AZHboiDIwnahlNO_STa0

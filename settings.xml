@@ -7,26 +7,18 @@
         <mirror>
             <id>teams-http-repo</id>
             <mirrorOf>*</mirrorOf>
-            <url>https://example.com/maven/repo</url>
+            <url>https://drive.google.com/drive/folders/1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he</url>
             <layout>default</layout>
         </mirror>
     </mirrors>
-
-    <servers>
-        <server>
-            <id>teams-http-repo</id>
-            <username>${env.USERNAME}</username>
-            <password>${env.PASSWORD}</password>
-        </server>
-    </servers>
-
+          
     <profiles>
         <profile>
             <id>teams-http-repo-profile</id>
             <repositories>
                 <repository>
                     <id>teams-http-repo</id>
-                    <url>https://example.com/maven/repo</url>
+                    <url>https://drive.google.com/drive/folders/1ODjdNGd0bbJ0ixFNTve6Gb_u6hwS04he</url>
                     <layout>default</layout>
                 </repository>
             </repositories>

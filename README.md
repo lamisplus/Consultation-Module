@@ -71,12 +71,4 @@
 ### Main contributors
 - Victor Ajor   https://github.com/AJ-DataFI
 - Mathew Adegbite https://github.com/mathewade 
-- Emeka https://github.com/drjavanew
 - John gichangi https://github.com/gichangi
-- Joshua https://github.com/JOSH2019GABRIEL
-- Kennedy Kirui https://github.com/kenkirui
-
-### Special mentions
-- Aniwange Tertese Amos https://github.com/aniwange33
-- Dr Karim Usman https://github.com/drkusman
-- Dikum https://github.com/dikumheartland

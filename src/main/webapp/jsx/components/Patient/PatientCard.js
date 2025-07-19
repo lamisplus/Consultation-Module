@@ -86,23 +86,17 @@ function PatientCard(props) {
         return (  <Label color="blue" size="mini">Active</Label>);
 }
 
-    const getHospitalNumber = (identifier) => {
-      const identifiers = identifier;
-      const hospitalNumber = identifiers.identifier.find(obj => obj.type == 'HospitalNumber');
-      return hospitalNumber ? hospitalNumber.value : '';
-    };
+   const getHospitalNumber = (patientObj) => {
+     return patientObj.hospitalNumber || "";
+   };
 
-    const getPhoneNumber = (identifier) => {
-      const identifiers = identifier;
-      const phoneNumber = identifiers.contactPoint.find(obj => obj.type == 'phone');
-      return phoneNumber ? phoneNumber.value : '';
-    };
+   const getPhoneNumber = (patientObj) => {
+     return patientObj.phoneNumber || "";
+   };
 
-    const getAddress = (identifier) => {
-      const identifiers = identifier;
-      const address = identifiers.address.find(obj => obj.city);
-      return address ? address.city : '';
-    };
+   const getAddress = (patientObj) => {
+     return patientObj.address || "";
+   };
 
     const PostPatientService =(row)=> {
       setpatientObj({...patientObj, ...row});
@@ -112,107 +106,128 @@ function PatientCard(props) {
   
   return (
     <div className={classes.root}>
-        <ExpansionPanel defaultExpanded>
-            <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+      <ExpansionPanel defaultExpanded>
+        <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+          <Row>
+            <Col md={11}>
+              <Row className={"mt-1"}>
+                <Col md={12} className={classes.root2}>
+                  <b style={{ fontSize: "25px", color: "rgb(153, 46, 98)" }}>
+                    {patientObj.surname +
+                      ", " +
+                      patientObj.firstName +
+                      " " +
+                      patientObj.otherName}
+                    <span style={{ color: "green" }}>{": " + "Active"}</span>
+                  </b>
+                </Col>
+                <Col
+                  md={4}
+                  className={classes.root2}
+                  style={{ marginTop: "10px" }}
+                >
+                  <span>
+                    {" "}
+                    Hospital Number :{" "}
+                    <b style={{ color: "#0B72AA" }}>
+                      {getHospitalNumber(patientObj)}
+                    </b>
+                  </span>
+                </Col>
 
-                <Row>
+                <Col
+                  md={4}
+                  className={classes.root2}
+                  style={{ marginTop: "10px" }}
+                >
+                  <span>
+                    Date Of Birth :{" "}
+                    <b style={{ color: "#0B72AA" }}>{patientObj.dateOfBirth}</b>
+                  </span>
+                </Col>
+                <Col
+                  md={4}
+                  className={classes.root2}
+                  style={{ marginTop: "10px" }}
+                >
+                  <span>
+                    {" "}
+                    Age :{" "}
+                    <b style={{ color: "#0B72AA" }}>
+                      {calculate_age(patientObj.dateOfBirth)}
+                    </b>
+                  </span>
+                </Col>
+                <Col md={4} style={{ marginTop: "10px" }}>
+                  <span>
+                    {" "}
+                    Sex : <b style={{ color: "#0B72AA" }}>{patientObj.sex}</b>
+                  </span>
+                </Col>
+                <Col
+                  md={4}
+                  className={classes.root2}
+                  style={{ marginTop: "10px" }}
+                >
+                  <span>
+                    {" "}
+                    Phone Number :{" "}
+                    <b style={{ color: "#0B72AA" }}>
+                      {getPhoneNumber(patientObj)}
+                    </b>
+                  </span>
+                </Col>
+                <Col
+                  md={4}
+                  className={classes.root2}
+                  style={{ marginTop: "10px" }}
+                >
+                  <span>
+                    {" "}
+                    Address :{" "}
+                    <b style={{ color: "#0B72AA" }}>{getAddress(patientObj)}</b>
+                  </span>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
+        </ExpansionPanelSummary>
+        <Divider />
+        <ExpansionPanelActions expandIcon={<ExpandMoreIcon />}>
+          <div className="float-end" style={{ floated: "right" }}>
+            {" "}
+            <Link to={"/"}>
+              <Button floated="right" style={{ padding: "0px" }}>
+                <MatButton
+                  variant="contained"
+                  floated="right"
+                  startIcon={<TiArrowBack />}
+                  style={{
+                    backgroundColor: "rgb(153, 46, 98)",
+                    color: "#fff",
+                    height: "35px",
+                  }}
+                >
+                  <span style={{ textTransform: "capitalize" }}>Back</span>
+                </MatButton>
+              </Button>
+            </Link>{" "}
+            <Button
+              floated="right"
+              style={{
+                backgroundColor: "#014d88",
+                color: "#fff",
+                height: "35px",
+              }}
+              onClick={() => PostPatientService(patientObj)}
+            >
+              Post Patient
+            </Button>
+          </div>
+        </ExpansionPanelActions>
+      </ExpansionPanel>
 
-
-                    <Col md={11}>
-                        <Row className={"mt-1"}>
-                            <Col md={12} className={classes.root2} >
-                                <b style={{fontSize: "25px", color:'rgb(153, 46, 98)'}}>
-                                    {patientObj.surname + ", " + patientObj.firstName + " " + patientObj.otherName}
-                                    < span style={{color:'green'}}>
-                                             {": "+"Active"}
-                                        </span>
-                                </b>
-
-                            </Col>
-                            <Col md={4} className={classes.root2} style={{marginTop:"10px"}}>
-                                    <span>
-                                        {" "}
-                                        Hospital Number : <b style={{color:'#0B72AA'}}>{getHospitalNumber(patientObj.identifier) }</b>
-                                    </span>
-                            </Col>
-
-                            <Col md={4} className={classes.root2} style={{marginTop:"10px"}}>
-                                    <span>
-                                        Date Of Birth : <b style={{color:'#0B72AA'}}>{patientObj.dateOfBirth }</b>
-                                    </span>
-                            </Col>
-                            <Col md={4} className={classes.root2} style={{marginTop:"10px"}}>
-                                <span>
-                                    {" "}
-                                    Age : <b style={{color:'#0B72AA'}}>{calculate_age(patientObj.dateOfBirth) }</b>
-                                </span>
-                            </Col>
-                            <Col md={4} style={{marginTop:"10px"}}>
-                                    <span>
-                                        {" "}
-                                        Sex :{" "}
-                                        <b style={{color:'#0B72AA'}}>{patientObj.sex}</b>
-                                    </span>
-
-                            </Col>
-                            <Col md={4} className={classes.root2} style={{marginTop:"10px"}}>
-                                <span>
-                                    {" "}
-                                    Phone Number : <b style={{color:'#0B72AA'}}>{getPhoneNumber(patientObj.contactPoint)}</b>
-                                </span>
-                            </Col>
-                            <Col md={4} className={classes.root2} style={{marginTop:"10px"}}>
-                                <span>
-                                    {" "}
-                                    Address : <b style={{color:'#0B72AA'}}>{getAddress(patientObj.address)} </b>
-                                </span>
-
-                            </Col>
-
-
-                        </Row>
-                    </Col>
-
-                </Row>
-
-            </ExpansionPanelSummary>
-            <Divider />
-            <ExpansionPanelActions expandIcon={<ExpandMoreIcon />}>
-              <div className="float-end" style={{floated:'right'}}>
-                    {" "}<Link to={"/"} >
-                    <Button
-                        floated='right'
-                        style={{padding:'0px'}}
-                    >
-                        <MatButton
-                            variant="contained"
-                            floated='right'
-                            startIcon={<TiArrowBack  />}
-                            style={{backgroundColor:"rgb(153, 46, 98)", color:'#fff', height:'35px'}}
-                        >
-                            <span style={{ textTransform: "capitalize" }}>Back</span>
-                        </MatButton>
-                    </Button>
-
-                </Link>
-
-                            {" "}<Button  floated='right'  style={{backgroundColor:"#014d88", color:'#fff',height:'35px'}} onClick={() => PostPatientService(patientObj)}>Post Patient</Button>
-
-
-                </div>
-            </ExpansionPanelActions>
-        </ExpansionPanel>
-
-
-
-
-
-
-
-
-
-
-            <PostPatient toggle={toggle} showModal={modal} patientObj={patientObj} />
+      <PostPatient toggle={toggle} showModal={modal} patientObj={patientObj} />
     </div>
   );
 }

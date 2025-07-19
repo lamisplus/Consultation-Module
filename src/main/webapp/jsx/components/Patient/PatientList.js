@@ -107,7 +107,7 @@ const Patients = (props) => {
     ///GET LIST OF Patients
     async function patients() {
         axios
-            .get(`${baseUrl}patient/checked-in-by-service/consultation-code`,
+            .get(`${baseUrl}patient/checked-in-by-service/Consultation_code`,
                 { headers: {"Authorization" : `Bearer ${token}`} }
             )
             .then((response) => {
@@ -135,11 +135,9 @@ const Patients = (props) => {
         return age_now + " year(s)";
     };
 
-    const getHospitalNumber = (identifier) => {
-        const identifiers = identifier;
-        const hospitalNumber = identifiers.identifier.find(obj => obj.type == 'HospitalNumber');
-        return hospitalNumber ? hospitalNumber.value : '';
-    };
+     const getHospitalNumber = (patientObj) => {
+       return patientObj.hospitalNumber || "";
+     };
 
 
     function actionItems(row){
@@ -165,67 +163,66 @@ const Patients = (props) => {
     }
     //console.log(patientList)
     return (
-        <div>
-            <Card>
-                <CardBody>
+      <div>
+        <Card>
+          <CardBody>
+            <MaterialTable
+              icons={tableIcons}
+              title="Find Patient "
+              columns={[
+                // { title: " ID", field: "Id" },
+                {
+                  title: "Patient Name",
+                  field: "name",
+                },
+                {
+                  title: "Hospital Number",
+                  field: "hospital_number",
+                  filtering: false,
+                },
+                { title: "Gender", field: "gender", filtering: false },
+                { title: "Age", field: "age", filtering: false },
+                { title: "Actions", field: "actions", filtering: false },
+              ]}
+              data={patientList.map((row) => ({
+                name: row.firstName + " " + row.otherName,
+                hospital_number: row.hospitalNumber,
+                gender: row.sex,
+                age:
+                  row.dateOfBirth === 0 ||
+                  row.dateOfBirth === undefined ||
+                  row.dateOfBirth === null ||
+                  row.dateOfBirth === ""
+                    ? 0
+                    : calculate_age(
+                        moment(row.dateOfBirth).format("DD-MM-YYYY")
+                      ),
 
-
-                    <MaterialTable
-                        icons={tableIcons}
-                        title="Find Patient "
-                        columns={[
-                            // { title: " ID", field: "Id" },
-                            {
-                                title: "Patient Name",
-                                field: "name",
-                            },
-                            { title: "Hospital Number", field: "hospital_number", filtering: false },
-                            { title: "Gender", field: "gender", filtering: false },
-                            { title: "Age", field: "age", filtering: false },
-                            { title: "Actions", field: "actions", filtering: false },
-                        ]}
-                        data={ patientList.map((row) => ({
-
-                            name:row.firstName + " " + row.otherName,
-                            hospital_number: row.identifier.identifier[0].value,
-                            gender:row.sex,
-                            age: (row.dateOfBirth === 0 ||
-                                row.dateOfBirth === undefined ||
-                                row.dateOfBirth === null ||
-                                row.dateOfBirth === "" )
-                                ? 0
-                                : calculate_age(moment(row.dateOfBirth).format("DD-MM-YYYY")),
-
-                               actions:<SplitActionButton actions={actionItems(row)} />
-
-                        }))}
-
-                        options={{
-                            headerStyle: {
-                                backgroundColor: "#014d88",
-                                color: "#fff",
-                                fontSize:'16px',
-                                padding:'10px',
-                                fontWeight:'bolder'
-                            },
-                            searchFieldStyle: {
-                                width : '200%',
-                                margingLeft: '250px',
-                            },
-                            filtering: false,
-                            exportButton: false,
-                            searchFieldAlignment: 'left',
-                            pageSizeOptions:[10,20,100],
-                            pageSize:10,
-                            debounceInterval: 400
-                        }}
-                    />
-
-                </CardBody>
-            </Card>
-
-
-        </div>
+                actions: <SplitActionButton actions={actionItems(row)} />,
+              }))}
+              options={{
+                headerStyle: {
+                  backgroundColor: "#014d88",
+                  color: "#fff",
+                  fontSize: "16px",
+                  padding: "10px",
+                  fontWeight: "bolder",
+                },
+                searchFieldStyle: {
+                  width: "200%",
+                  margingLeft: "250px",
+                },
+                filtering: false,
+                exportButton: false,
+                searchFieldAlignment: "left",
+                pageSizeOptions: [10, 20, 100],
+                pageSize: 10,
+                debounceInterval: 400,
+              }}
+            />
+          </CardBody>
+        </Card>
+      </div>
     );
 }
 

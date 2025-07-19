@@ -1,50 +1,163 @@
 package org.lamisplus.modules.consultation.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.lamisplus.modules.consultation.domain.dto.ConsultationDTO;
 import org.lamisplus.modules.consultation.domain.entity.Consultation;
+import org.lamisplus.modules.consultation.domain.entity.Diagnosis;
+import org.lamisplus.modules.consultation.domain.entity.PresentingComplaint;
 import org.lamisplus.modules.consultation.domain.mapper.ConsultationMapper;
+import org.lamisplus.modules.consultation.exceptions.EntityNotFoundException;
 import org.lamisplus.modules.consultation.repository.ConsultationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ConsultationService {
     @Autowired
     private ConsultationRepository repository;
     private final ConsultationMapper mapper;
 
-    public ConsultationDTO Save(ConsultationDTO consultationDTO){
 
+
+    @Transactional
+    public ConsultationDTO save(ConsultationDTO consultationDTO) {
         Consultation consultation = mapper.toConsultation(consultationDTO);
-        consultation.setUuid(UUID.randomUUID().toString());
+
+
+        if (consultation.getPresentingComplaints() != null) {
+            consultation.getPresentingComplaints()
+                    .forEach(pc -> pc.setConsultation(consultation));
+        }
+
+        if (consultation.getDiagnosisList() != null) {
+            consultation.getDiagnosisList()
+                    .forEach(d -> d.setConsultation(consultation));
+        }
+
+        if (consultation.getUuid() == null) {
+            consultation.setUuid(UUID.randomUUID().toString());
+        }
+
         return mapper.toConsultationDto(repository.save(consultation));
     }
 
-    public ConsultationDTO Update(int id, ConsultationDTO consultationDTO){
-        Consultation consultation = mapper.toConsultation(consultationDTO);
-        return mapper.toConsultationDto(repository.save(consultation));
-    }
+
+
 
     public ConsultationDTO findById(int id) {
-        return mapper.toConsultationDto(repository.findById(id).orElse(null));
+        try {
+            Consultation consultation = repository.findById(id).orElse(null);
+            return consultation != null ?
+                    mapper.toConsultationDto(consultation) :
+                    null;
+        } catch (Exception e) {
+            log.error("Error finding consultation with ID: {}", id, e);
+            return null;
+        }
     }
 
-    public List<ConsultationDTO> GetAllEncountersByPatientId(int patientId) {
-        return mapper.toConsultationDtoList(repository.findAllByPatientId(patientId));
+
+
+    public List<ConsultationDTO> getAllEncountersByPatientId(int patientId) {
+        List<Consultation> consultations = repository.findByPatientIdWithDetails(patientId);
+        return mapper.toConsultationDtoList(consultations);
     }
 
-    public List<ConsultationDTO> GetAllEncountersByVisitId(int patientId) {
-        return mapper.toConsultationDtoList(repository.findAllByVisitId(patientId));
+
+   public Page<ConsultationDTO> getAllConsultations(int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Consultation> consultationPage = repository.findAll(pageable);
+
+        return consultationPage.map(mapper::toConsultationDto);
     }
 
-    public String Delete(int id) {
-        Consultation consultation = repository.findById(id).orElse(null);
-        repository.delete(consultation);
-        return id + " deleted successfully";
+
+    public List<ConsultationDTO> getAllConsultationsByVisitId(int visitId) {
+        List<Consultation> consultations = repository.findAllByVisitIdWithDetails(visitId);
+        return mapper.toConsultationDtoList(consultations);
     }
+
+    public String delete(int id) {
+        try {
+            Consultation consultation = repository.findById(id).orElse(null);
+            if (consultation != null) {
+                repository.delete(consultation);
+                return id + " deleted successfully";
+            }
+            return "No consultation found with ID: " + id;
+        } catch (Exception e) {
+            log.error("Error deleting consultation with ID: {}", id, e);
+            return "Error deleting consultation with ID: " + id;
+        }
+    }
+
+
+    @Transactional
+    public ConsultationDTO update(int id, ConsultationDTO consultationDTO) {
+
+        Consultation existingConsultation = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Consultation not found with id: " + id));
+
+        Consultation updatedConsultation = mapper.toConsultation(consultationDTO);
+
+        updatedConsultation.setId(id);
+        updatedConsultation.setUuid(existingConsultation.getUuid());
+
+        updateChildEntities(existingConsultation, updatedConsultation);
+
+        Consultation savedConsultation = repository.save(updatedConsultation);
+
+
+        return mapper.toConsultationDto(savedConsultation);
+    }
+
+
+
+    private void updateChildEntities(Consultation existing, Consultation updated) {
+
+        if (updated.getPresentingComplaints() != null) {
+
+            existing.getPresentingComplaints().clear();
+
+            // Add all updated complaints and set the consultation reference
+            for (PresentingComplaint complaint : updated.getPresentingComplaints()) {
+                complaint.setConsultation(existing);
+                existing.getPresentingComplaints().add(complaint);
+            }
+        }
+
+
+        if (updated.getDiagnosisList() != null) {
+
+            existing.getDiagnosisList().clear();
+            // Add all updated diagnoses and set the consultation reference
+            for (Diagnosis diagnosis : updated.getDiagnosisList()) {
+                diagnosis.setConsultation(existing);
+                existing.getDiagnosisList().add(diagnosis);
+            }
+        }
+    }
+
+
+
 }

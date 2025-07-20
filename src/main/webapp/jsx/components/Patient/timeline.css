@@ -1,0 +1,98 @@
+.timeline {
+  position: relative;
+  list-style: none;
+}
+
+.timeline:before {
+  content: '';
+  position: absolute;
+  left: 5%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+}
+
+.timeline > li {
+  position: relative;
+  margin-bottom: 30px;
+  min-height: 50px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background: #007bff;
+  border: 0.36em solid #fff;
+  outline: 1px solid #ccc;
+
+  border-radius: 50%;
+  z-index: 1;
+  top: 0;
+  transition: border-color 0.3s;
+}
+
+.timeline-panel {
+  margin-left: 40px;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 15px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.timeline-panel.text-muted {
+  color: #6c757d;
+}
+
+.timeline .text-primary {
+  color: #007bff;
+  font-weight: bold;
+}
+.card-bg-one {
+  background: #f8f9fa !important;
+}
+
+.card-bg-two {
+  background: #e9ecef !important;
+}
+
+.card-bg-three {
+  background: #dee2e6 !important;
+}
+
+.card-bg-four {
+  background: #e3eaf2 !important;
+}
+
+.card-bg-five {
+  background: #ece9f1 !important;
+}
+
+.card-bg-six {
+  background: #f3f1ed !important;
+}
+
+.text-on-dark {
+  color: #fff !important;
+}
+
+.text-on-light {
+  color: #333 !important;
+}
+.card-bg-muted-blue {
+  background: #dbeafe !important;
+}
+.card-bg-muted-orange {
+  background: #fdbe6c !important;
+}
+.card-bg-muted-yellow {
+  background: #feef47 !important;
+}
+.card-bg-muted-pink {
+  background: #ffa4d8 !important;
+}

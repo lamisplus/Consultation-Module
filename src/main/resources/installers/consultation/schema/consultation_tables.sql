@@ -61,23 +61,23 @@ CREATE TABLE public.consultation_diagnosis
 
 ALTER SEQUENCE consultation_diagnosis_id_seq OWNED BY consultation_diagnosis.id;
 
-delete from base_application_codeset where codeset_group='COMPLAINT_SEVERITY';
-delete from base_application_codeset where codeset_group='DIAGNOSIS_ORDER';
-delete from base_application_codeset where codeset_group='DIAGNOSIS_CERTAINTY';
-
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '1', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '2', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '3', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '4', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '5', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '6', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '7', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '8', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '9', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '10', 'en', 1, '', '2022-04-25', '', 0);
-
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_ORDER', 'Primary', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_ORDER', 'Secondary', 'en', 1, '', '2022-04-25', '', 0);
-
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_CERTAINTY', 'Presumed', 'en', 1, '', '2022-04-25', '', 0);
-insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_CERTAINTY', 'Confirmed', 'en', 1, '', '2022-04-25', '', 0);
+--delete from base_application_codeset where codeset_group='COMPLAINT_SEVERITY';
+--delete from base_application_codeset where codeset_group='DIAGNOSIS_ORDER';
+--delete from base_application_codeset where codeset_group='DIAGNOSIS_CERTAINTY';
+--
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '1', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '2', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '3', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '4', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '5', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '6', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '7', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '8', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '9', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'COMPLAINT_SEVERITY', '10', 'en', 1, '', '2022-04-25', '', 0);
+--
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_ORDER', 'Primary', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_ORDER', 'Secondary', 'en', 1, '', '2022-04-25', '', 0);
+--
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_CERTAINTY', 'Presumed', 'en', 1, '', '2022-04-25', '', 0);
+--insert into base_application_codeset(id, codeset_group, display, language, version, code, date_created, created_by, archived) values((SELECT MAX(id) + 1 FROM base_application_codeset), 'DIAGNOSIS_CERTAINTY', 'Confirmed', 'en', 1, '', '2022-04-25', '', 0);

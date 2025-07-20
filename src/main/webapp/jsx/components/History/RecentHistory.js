@@ -1,95 +1,108 @@
-import React, {Fragment, useState, useCallback, useEffect } from "react";
-import { KeyboardDateTimePicker, MuiPickersUtilsProvider, KeyboardDatePicker } from "@material-ui/pickers";
+import React, { Fragment, useState, useCallback, useEffect } from "react";
+import {
+  KeyboardDateTimePicker,
+  MuiPickersUtilsProvider,
+  KeyboardDatePicker,
+} from "@material-ui/pickers";
 import { useForm, Controller } from "react-hook-form";
-import DateFnsUtils from '@date-io/date-fns';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
+import DateFnsUtils from "@date-io/date-fns";
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
 import axios from "axios";
-import { toast } from 'react-toastify';
-import {token, url as baseUrl, apiUrl as apiUrl } from "../../../api";
-import { Grid, Segment, Label, Icon, List,Button, Card, Feed, Input, Radio } from 'semantic-ui-react';
-import 'tinymce/tinymce';
-import 'tinymce/icons/default';
-import 'tinymce/themes/silver';
-import 'tinymce/plugins/link';
-import 'tinymce/plugins/image';
-import 'tinymce/plugins/table';
-import 'tinymce/skins/ui/oxide/skin.min.css';
-import 'tinymce/skins/ui/oxide/content.min.css';
-import 'tinymce/models/dom/model';
-import 'tinymce/skins/content/default/content.min.css';
-import { Editor } from '@tinymce/tinymce-react';
-import Box from '@mui/material/Box';
-import { Checkbox, Table } from 'semantic-ui-react';
-import {format} from "date-fns";
-import { Link, useHistory } from 'react-router-dom';
+import { toast } from "react-toastify";
+import { token, url as baseUrl, apiUrl as apiUrl } from "../../../api";
+import {
+  Grid,
+  Segment,
+  Label,
+  Icon,
+  List,
+  Button,
+  Card,
+  Feed,
+  Input,
+  Radio,
+} from "semantic-ui-react";
+import "tinymce/tinymce";
+import "tinymce/icons/default";
+import "tinymce/themes/silver";
+import "tinymce/plugins/link";
+import "tinymce/plugins/image";
+import "tinymce/plugins/table";
+import "tinymce/skins/ui/oxide/skin.min.css";
+import "tinymce/skins/ui/oxide/content.min.css";
+import "tinymce/models/dom/model";
+import "tinymce/skins/content/default/content.min.css";
+import { Editor } from "@tinymce/tinymce-react";
+import Box from "@mui/material/Box";
+import { Checkbox, Table } from "semantic-ui-react";
+import { format } from "date-fns";
+import { Link, useHistory } from "react-router-dom";
 import ButtonMui from "@material-ui/core/Button";
-import AddPharmacyOrder from './AddPharmacyOrder';
-import EditPharmacyOrder from './EditPharmacyOrder';
-import { makeStyles } from '@material-ui/core/styles';
-import { Accordion,AccordionSummary,AccordionDetails } from '@material-ui/core'
-import Typography from '@material-ui/core/Typography';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import AddPharmacyOrder from "./AddPharmacyOrder";
+import EditPharmacyOrder from "./EditPharmacyOrder";
+import { makeStyles } from "@material-ui/core/styles";
+import * as moment from "moment";
 import _ from "lodash";
 import VitalsCard from "../Consultation/VitalsCard";
 import { icd10 } from "./icd-10";
 
-const useStyles = makeStyles(theme => ({
-    card: {
-        margin: theme.spacing(20),
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-    },
-    form: {
-        width: '100%', // Fix IE 11 issue.
-        marginTop: theme.spacing(3)
-    },
-    submit: {
-        margin: theme.spacing(3, 0, 2)
-    },
-    cardBottom: {
-        marginBottom: 20
-    },
-    Select: {
-        height: 45,
-        width: 350
-    },
-    button: {
-        margin: theme.spacing(1)
-    },
+const useStyles = makeStyles((theme) => ({
+  card: {
+    margin: theme.spacing(20),
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  form: {
+    width: "100%", // Fix IE 11 issue.
+    marginTop: theme.spacing(3),
+  },
+  submit: {
+    margin: theme.spacing(3, 0, 2),
+  },
+  cardBottom: {
+    marginBottom: 20,
+  },
+  Select: {
+    height: 45,
+    width: 350,
+  },
+  button: {
+    margin: theme.spacing(1),
+  },
 
-    root: {
-        '& > *': {
-            margin: theme.spacing(1)
-        }
+  root: {
+    "& > *": {
+      margin: theme.spacing(1),
     },
-    input: {
-        //border:'1px solid #014d88',
-        borderRadius:'0px',
-        fontSize:'14px',
-        color:'#000'
-    },
-    error: {
-        color: "#f85032",
-        fontSize: "11px",
-    },
-    success: {
-        color: "#4BB543 ",
-        fontSize: "11px",
-    },
-    inputGroupText:{
-        backgroundColor:'#014d88',
-        fontWeight:"bolder",
-        color:'#fff',
-        borderRadius:'0px'
-    },
-    label:{
-        fontSize:'14px',
-        color:'#014d88',
-        fontWeight:'600'
-    }
-}))
+  },
+  input: {
+    //border:'1px solid #014d88',
+    borderRadius: "0px",
+    fontSize: "14px",
+    color: "#000",
+  },
+  error: {
+    color: "#f85032",
+    fontSize: "11px",
+  },
+  success: {
+    color: "#4BB543 ",
+    fontSize: "11px",
+  },
+  inputGroupText: {
+    backgroundColor: "#014d88",
+    fontWeight: "bolder",
+    color: "#fff",
+    borderRadius: "0px",
+  },
+  label: {
+    fontSize: "14px",
+    color: "#014d88",
+    fontWeight: "600",
+  },
+}));
 
 const Widget = (props) => {
   const classes = useStyles();
@@ -189,15 +202,12 @@ const Widget = (props) => {
     return Object.values(temp).every((x) => x == "");
   };
 
-
   const onSubmit = async (data) => {
-   
     if (!validateInputs()) {
       return;
     }
 
     try {
-      
       const diagnosisList = inputFieldsDiagnosis
         .filter((field) => field.diagnosis)
         .map((field) => ({ ...field }));
@@ -219,21 +229,12 @@ const Widget = (props) => {
         visitNotes: body,
       };
 
-      console.log("Consultation data:", consultationData);
-
-   
       const consultationResponse = await axios.post(
         `${baseUrl}consultations`,
         consultationData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log(
-        "Consultation saved successfully:",
-        consultationResponse.data
-      );
-
-     
       const labTests = inputFieldsLab
         .filter(
           (field) =>
@@ -243,7 +244,6 @@ const Widget = (props) => {
             field.priority
         )
         .map((field) => {
-         
           const labOrderParts = field.labOrder.split("-");
           const labTestGroupId = parseInt(labOrderParts[0], 10);
           const description =
@@ -252,34 +252,30 @@ const Widget = (props) => {
               : field.labOrder.slice(2);
 
           return {
-        
             description: description,
-            labTestGroupId: labTestGroupId, 
-            labTestId: parseInt(field.labTest, 10), 
-            orderPriority: parseInt(field.priority, 10), 
+            labTestGroupId: labTestGroupId,
+            labTestId: parseInt(field.labTest, 10),
+            orderPriority: parseInt(field.priority, 10),
             labTestOrderStatus: 0,
-            
+
             clinicalNote: null,
             labNumber: null,
             viralLoadIndication: 0,
-            
           };
         });
 
-    
-
-    
       if (labTests.length > 0) {
         const labOrderData = {
           patientId: patientObj.id,
           visitId: patientObj.visitId,
-          orderDate: format(new Date(data.encounterDate.toString()), 'yyyy-MM-dd HH:mm:ss'),
+          orderDate: format(
+            new Date(data.encounterDate.toString()),
+            "yyyy-MM-dd HH:mm:ss"
+          ),
           tests: labTests,
           orderedDate: null,
           labOrderIndication: null,
         };
-
-    
 
         try {
           const labResponse = await axios.post(
@@ -291,19 +287,10 @@ const Widget = (props) => {
             }
           );
 
-          console.log("Lab orders saved successfully:", labResponse.data);
-
           toast.success("Successfully Saved Consultation and Lab Orders!", {
             position: toast.POSITION.TOP_RIGHT,
           });
         } catch (labError) {
-          console.error("Lab order error details:", {
-            message: labError.message,
-            response: labError.response?.data,
-            status: labError.response?.status,
-            requestData: labOrderData,
-          });
-
           toast.warning(
             "Consultation saved, but lab orders failed. Error: " +
               (labError.response?.data?.error || labError.message),
@@ -313,14 +300,10 @@ const Widget = (props) => {
           );
         }
       } else {
-        console.log("No lab tests to order");
         toast.success("Successfully Saved Consultation!", {
           position: toast.POSITION.TOP_RIGHT,
         });
       }
-
-      // Navigate away on success
-      history.push("/");
     } catch (consultationError) {
       console.error("Consultation error details:", {
         message: consultationError.message,
@@ -370,7 +353,6 @@ const Widget = (props) => {
     return true;
   };
 
-
   // You can call this function before submitting to debug
   // debugLabOrderData();
   const OnError = (errors) => {
@@ -384,7 +366,6 @@ const Widget = (props) => {
   const [labTests, setLabTests] = useState([]);
 
   const [priorities, setPriorities] = useState([]);
-  const [complaints, setComplaints] = useState(null);
 
   const loadLabCheck = useCallback(async () => {
     try {
@@ -433,17 +414,6 @@ const Widget = (props) => {
     }
   }, []);
 
-  //    const loadPreviousConsultation = useCallback(async () => {
-  //        try {
-  //            const response = await axios.get(`${baseUrl}consultations/consultations-by-patient-id/${patientObj.id}`, { headers: {"Authorization" : `Bearer ${token}`}});
-  //            setPreviousConsultation(response.data);
-  //        } catch (e) {
-  //            toast.error("An error occurred while fetching previous consultation", {
-  //                position: toast.POSITION.TOP_RIGHT
-  //            });
-  //        }
-  //    }, []);
-
   const loadLabGroup = useCallback(async () => {
     try {
       const response = await axios.get(`${baseUrl}laboratory/labtestgroups`, {
@@ -483,7 +453,6 @@ const Widget = (props) => {
     loadPharmacyCheck();
     loadLabCheck();
     loadOtherVisitsVitals();
-    //loadPreviousConsultation();
     loadLabGroup();
     priority();
     pharmacy_by_visitId();
@@ -635,51 +604,6 @@ const Widget = (props) => {
   return (
     <Grid columns="equal">
       <VitalsCard props={props} />
-      {/*<Grid.Column>
-                <Segment>
-
-                <List>
-                      <List.Item>
-                          <Link
-                              to={{
-                                  pathname: "/patient-consultations-history",
-                                  state: { patientObj: patientObj  }
-                              }}>
-                              <Button icon labelPosition='right'  style={{width:'100%',backgroundColor:'#992E62',color:"#fff", padding:'15px'}}  fluid>
-                                  <Icon name='eye' />
-                                  View Consultation History
-                              </Button>
-                          </Link>
-                      </List.Item>
-                </List>
-                    { previousConsultation &&
-                        <Card style={{width:'100%'}}>
-                            <Card.Content style={{padding:'5px'}}>
-                                <Feed>
-                                    {previousConsultation && previousConsultation.length > 0 &&
-                                        previousConsultation.map(consultation =>
-                                            <Accordion>
-                                                <AccordionSummary
-                                                    expandIcon={<ExpandMoreIcon style={{color:'#fff'}} />}
-                                                    aria-controls="panel2a-content"
-                                                    id="panel2a-header"
-                                                    style={{padding:'0px 0px 0px 10px',backgroundColor:'#1678c2',border:'2px solid #ddd',color:'#fff'}}
-                                                >
-                                                    <Typography className={classes.heading} >Notes - {consultation.encounterDate}</Typography>
-                                                </AccordionSummary>
-                                                <AccordionDetails style={{padding:'10px 5px',minHeight:100,border:'2px solid #ddd', marginTop:'-10px',fontFamily:'Trebuchet'}}>
-                                                    <div dangerouslySetInnerHTML={{__html: consultation.visitNotes}} />
-                                                </AccordionDetails>
-                                            </Accordion>
-                                        )
-
-                                    }
-                                </Feed>
-                            </Card.Content>
-                        </Card>
-                    }
-                </Segment>
-              </Grid.Column>*/}
       <Grid.Column width={11}>
         <form onSubmit={handleSubmit(onSubmit, OnError)}>
           <Label
@@ -743,15 +667,6 @@ const Widget = (props) => {
               ) : (
                 ""
               )}
-              {/* <span className="input-group-text" style={{height:'300px',backgroundColor:'#014d88',color:'#fff', fontSize:'14px'}}>Visit Note</span>
-                           <Controller
-                                name="visitNote"
-                                control={control}
-                                rules={{ required: true }}
-                                render={({ field: { ref, ...rest }}) => (
-                                    <textarea  style={{ minHeight: 300,border:'1px solid #014d88', fontSize:'16px' }} className="form-control" {...rest} ></textarea>
-                                )}
-                            />*/}
               <Editor
                 textareaName="visitNote"
                 initialValue=""
@@ -797,7 +712,6 @@ const Widget = (props) => {
                   <Table.Cell style={{ fontWeight: "bold" }}>
                     Severity
                   </Table.Cell>
-                  {/*<Table.Cell style={{ fontWeight: 'bold'}}>Date Resolved</Table.Cell>*/}
                 </Table.Row>
               </Table.Header>
 
@@ -806,15 +720,6 @@ const Widget = (props) => {
                   <Fragment key={`${inputField}~${index}`}>
                     <Table.Row>
                       <Table.Cell>
-                        {/*<Input
-                                                    id="complaint"
-                                                    name="complaint"
-                                                    type="text"
-                                                    fluid
-                                                    placeholder='Enter Presenting Complaints'
-                                                    value={inputField.complaint}
-                                                    onChange={event => handleInputChange(index, event)}
-                                                />*/}
                         <Autocomplete
                           id="complaint"
                           getOptionLabel={(icd10) =>
@@ -857,6 +762,7 @@ const Widget = (props) => {
                           id="onsetDate"
                           name="onsetDate"
                           type="date"
+                          min={moment(new Date()).format("YYYY-MM-DD")}
                           fluid
                           placeholder="Onset Date"
                           value={inputField.onsetDate}
@@ -907,17 +813,6 @@ const Widget = (props) => {
                           ""
                         )}
                       </Table.Cell>
-                      {/*<Table.Cell>
-                                                <Input
-                                                    id="dateResolved"
-                                                    name="dateResolved"
-                                                    type="date"
-                                                    fluid
-                                                    placeholder='Date Resolved'
-                                                    value={inputField.dateResolved}
-                                                    onChange={event => handleInputChange(index, event)}
-                                                />
-                                            </Table.Cell>*/}
                     </Table.Row>
                   </Fragment>
                 ))}
@@ -970,7 +865,6 @@ const Widget = (props) => {
                   <Table.Cell style={{ fontWeight: "bold" }}>
                     Certainty
                   </Table.Cell>
-                  {/*<Table.Cell style={{ fontWeight: 'bold'}}></Table.Cell>*/}
                 </Table.Row>
               </Table.Header>
 
@@ -979,15 +873,6 @@ const Widget = (props) => {
                   <Fragment key={`${diagInputField}~${diagIndex}`}>
                     <Table.Row>
                       <Table.Cell>
-                        {/*<Input
-                                                    id="diagnosis"
-                                                    name="diagnosis"
-                                                    type="text"
-                                                    fluid
-                                                    placeholder='Condition'
-                                                    value={diagInputField.diagnosis}
-                                                    onChange={event => handleInputDiagChange(diagIndex, event)}
-                                                />*/}
                         <Autocomplete
                           id="diagnosis"
                           getOptionLabel={(icd10) =>
@@ -1225,22 +1110,6 @@ const Widget = (props) => {
                               ))}
                             </select>
                           </Table.Cell>
-                          {/* <Table.Cell>
-                                                    <select
-                                                        className="ui fluid selection dropdown"
-                                                        value={labInputField.status}
-                                                        onChange={e => handleInputLabChange(labIndex, e)}
-                                                        name="status"
-                                                        id="status">
-                                                        <option>Select</option>
-                                                        <option value="0">Pending Collection</option>
-                                                      <option value="1">Sample Collected</option>
-                                                        <option value="2">Sample Transferred</option>
-                                                        <option value="3">Sample Verified</option>
-                                                        <option value="4">Sample Rejected</option>
-                                                        <option value="5">Result Available</option>
-                                                    </select>
-                                                </Table.Cell> */}
                         </Table.Row>
                       </Fragment>
                     ))}
@@ -1306,12 +1175,6 @@ const Widget = (props) => {
                       </Label>
                     </p>
                     <hr />
-                    {/*<br /> Start at {pharmacy.startDate} for {pharmacy.dosageFrequency} to be taken {pharmacy.duration} time(s) a day
-                                  <br />
-                                  Instructions: {pharmacy.comments}  <br />
-                                  </p>
-
-                                  <br/>*/}
                   </div>
                 ))
               ) : (

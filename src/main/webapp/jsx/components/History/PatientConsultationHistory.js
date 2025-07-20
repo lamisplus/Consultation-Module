@@ -102,168 +102,189 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const PatientConsultationHistory = (props) => {
-    const classes =useStyles();
-    let history = useHistory();
-    const [patientList, setPatientList] = useState([]);
-    const patientObj = history.location && history.location.state ? history.location.state.patientObj : {};
-    const[selectedVisit,setSelectedVisit] = useState();
-    const[labTests,setLabTests] = useState([]);
+  const classes = useStyles();
+  let history = useHistory();
+  const [patientList, setPatientList] = useState([]);
+  const patientObj =
+    history.location && history.location.state
+      ? history.location.state.patientObj
+      : {};
+  const [selectedVisit, setSelectedVisit] = useState();
+  const [labTests, setLabTests] = useState([]);
 
-    ///GET LIST OF Patients
-    const patientConsultations = useCallback(async () => {
-        try {
-            const response = await axios.get(`${baseUrl}consultations/consultations-by-patient-id/${patientObj.id}`, {headers: {"Authorization": `Bearer ${token}`}});
-            setPatientList(response.data);
-            if(response.data.length > 0 ){
-                setSelectedVisit(response.data[0]);
-            }
-        } catch (e) {
-            toast.error("An error occured while fetching consultation !", {
-                position: toast.POSITION.TOP_RIGHT
-            });
-        }
-
-    }, []);
-
-
-    const loadPatientTests = useCallback(async () => {
-         try {
-             const response = await axios.get(`${baseUrl}laboratory/orders/visits/${patientObj.id}`,
-                         { headers: {"Authorization" : `Bearer ${token}`}});
-
-             if(response.data.length > 0 ){
-                 setLabTests(response.data);
-             }
-         } catch (e) {
-             toast.error("An error occured while fetching consultation !", {
-                 position: toast.POSITION.TOP_RIGHT
-             });
-         }
-
-     }, []);
-
-    useEffect(() => {
-        patientConsultations()
-        loadPatientTests()
-    }, []);
-
-    const formatDiagnosis = diagnosisList => {
-        return diagnosisList.map(obj => obj.diagnosis) + " ,";
-    };
-    const formatPresentingComplaints = presentingComplaintsList => {
-        return presentingComplaintsList.map(obj => obj.complaint) + " ,";
-    };
-    const loadConsultationDetails = (row)=>{
-        setSelectedVisit(row);
-        //console.log(row);
+  ///GET LIST OF Patients
+  const patientConsultations = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${baseUrl}consultations/consultations-by-patient-id/${patientObj.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setPatientList(response.data);
+      if (response.data.length > 0) {
+        setSelectedVisit(response.data[0]);
+      }
+    } catch (e) {
+      toast.error("An error occured while fetching consultation !", {
+        position: toast.POSITION.TOP_RIGHT,
+      });
     }
-    return (
-        <Container style={{width:'100%'}}>
-            <br/><br/>
-            <Link to={{
-                pathname: "/patient-history",
-                state: { patientObj: patientObj  }
-            }} >
-                <Button
-                    floated='right'
-                    style={{padding:'0px'}}
-                >
-                    <MatButton
-                        variant="contained"
-                        floated='right'
-                        startIcon={<TiArrowBack  />}
-                        style={{backgroundColor:"rgb(153, 46, 98)", color:'#fff', height:'35px'}}
-                    >
-                        <span style={{ textTransform: "capitalize" }}>Back</span>
-                    </MatButton>
-                </Button>
-            </Link>
-            <br/><br/>
+  }, []);
 
-            <Card >
-                <CardContent>
-                    <Grid  columns='equal'  divided>
-                        <Grid.Column width={4}  style={{padding:'5px'}} item>
-                            <MaterialTable
-                                icons={tableIcons}
-                                /*title="Patient Consultations"*/
-                                title=""
-                                columns={[
-                                    // { title: " ID", field: "Id" },
-                                    {
-                                        title: "Consultation Visits", field: "date",
-                                        /*                                           cellStyle: {
+ 
+
+  const loadPatientTests = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${baseUrl}laboratory/orders/visits/${patientObj.visitId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.length > 0) {
+        setLabTests(response.data);
+      }
+    } catch (e) {
+      toast.error("An error occured while fetching consultation !", {
+        position: toast.POSITION.TOP_RIGHT,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    patientConsultations();
+    loadPatientTests();
+  }, []);
+
+  const formatDiagnosis = (diagnosisList) => {
+    return diagnosisList.map((obj) => obj.diagnosis) + " ,";
+  };
+  const formatPresentingComplaints = (presentingComplaintsList) => {
+    return presentingComplaintsList.map((obj) => obj.complaint) + " ,";
+  };
+  const loadConsultationDetails = (row) => {
+    setSelectedVisit(row);
+    //console.log(row);
+  };
+  return (
+    <Container style={{ width: "100%" }}>
+      <br />
+      <br />
+      <Link
+        to={{
+          pathname: "/patient-history",
+          state: { patientObj: patientObj },
+        }}
+      >
+        <Button floated="right" style={{ padding: "0px" }}>
+          <MatButton
+            variant="contained"
+            floated="right"
+            startIcon={<TiArrowBack />}
+            style={{
+              backgroundColor: "rgb(153, 46, 98)",
+              color: "#fff",
+              height: "35px",
+            }}
+          >
+            <span style={{ textTransform: "capitalize" }}>Back</span>
+          </MatButton>
+        </Button>
+      </Link>
+      <br />
+      <br />
+
+      <Card>
+        <CardContent>
+          <Grid columns="equal" divided>
+            <Grid.Column width={4} style={{ padding: "5px" }} item>
+              <MaterialTable
+                icons={tableIcons}
+                /*title="Patient Consultations"*/
+                title=""
+                columns={[
+                  // { title: " ID", field: "Id" },
+                  {
+                    title: "Consultation Visits",
+                    field: "date",
+                    /*                                           cellStyle: {
                                                                                        backgroundColor: '#039be5',
                                                                                        color: '#FFF'
                                                                                    },*/
-                                        cellStyle:{
-                                            padding:'10px 5px'
-                                        },
-                                        headerStyle: {
-                                            backgroundColor: '#014d88',
-                                        }
-                                    },
-                                    /*                                        { title: "Visit Notes", field: "visitNotes", filtering: false },
+                    cellStyle: {
+                      padding: "10px 5px",
+                    },
+                    headerStyle: {
+                      backgroundColor: "#014d88",
+                    },
+                  },
+                  /*                                        { title: "Visit Notes", field: "visitNotes", filtering: false },
                                                                             { title: "Diagnosis List", field: "diagnosisList", filtering: false },
                                                                             { title: "Presenting Complaints", field: "presentingComplaints", filtering: false },
                                                                             { title: "Actions", field: "actions", filtering: false },*/
-                                ]}
-                                data={ patientList.map((row) => ({
-                                    //Id: manager.id,
-                                    date:
-                                        <div>
+                ]}
+                data={patientList.map((row) => ({
+                  //Id: manager.id,
+                  date: (
+                    <div>
+                      <Button
+                        basic
+                        className=" float-end ms-2"
+                        style={{ width: "100%", border: "1px dotted #eee" }}
+                        onClick={() => loadConsultationDetails(row)}
+                      >
+                        <span
+                          style={{
+                            padding: "10px 0px",
+                            fontSize: "16px",
+                            color: "#014d88",
+                            fontWeight: "bolder",
+                            float: "left",
+                          }}
+                        >
+                          {row.encounterDate}
+                        </span>
+                      </Button>
+                    </div>
+                  ),
+                }))}
+                options={{
+                  headerStyle: {
+                    backgroundColor: "#014d88",
+                    color: "#fff",
+                    fontSize: "16px",
+                    padding: "10px",
+                    fontWeight: "bolder",
+                  },
+                  searchFieldStyle: {
+                    width: "100%",
+                  },
+                  toolbar: false,
+                  search: false,
+                  filtering: false,
+                  exportButton: false,
+                  /*searchFieldAlignment: 'left',*/
+                  pageSizeOptions: [10, 20, 100],
+                  pageSize: 10,
+                  debounceInterval: 400,
+                }}
+              />
+            </Grid.Column>
+            <Grid.Column style={{ padding: "0px 10px" }} item>
+              {selectedVisit && (
+                <Card>
+                  <CardContent style={{ width: "100%", padding: "5px" }}>
+                    <PatientConsultationHistoryCard
+                      visit={selectedVisit}
+                      testOrders={labTests}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </Grid.Column>
+          </Grid>
+        </CardContent>
+      </Card>
 
-                                            <Button
-                                                basic
-                                                className=" float-end ms-2"
-                                                style={{width:'100%',border:'1px dotted #eee'}}
-                                                onClick={()=>loadConsultationDetails(row)}
-                                            >
-                                                <span style={{padding:'10px 0px', fontSize:'16px', color: '#014d88', fontWeight:'bolder',float:'left'}}>{row.encounterDate}</span>
-                                            </Button>
-                                        </div>
-                                }))}
-
-                                options={{
-                                    headerStyle: {
-                                        backgroundColor: "#014d88",
-                                        color: "#fff",
-                                        fontSize:'16px',
-                                        padding:'10px',
-                                        fontWeight:'bolder'
-                                    },
-                                    searchFieldStyle: {
-                                        width : '100%',
-                                    },
-                                    toolbar: false,
-                                    search: false,
-                                    filtering: false,
-                                    exportButton: false,
-                                    /*searchFieldAlignment: 'left',*/
-                                    pageSizeOptions:[10,20,100],
-                                    pageSize:10,
-                                    debounceInterval: 400
-                                }}
-                            />
-                        </Grid.Column>
-                        <Grid.Column style={{padding:'0px 10px'}} item>
-                            {selectedVisit &&
-                                <Card >
-                                    <CardContent style={{width:'100%',padding:'5px'}}>
-                                        <PatientConsultationHistoryCard visit={selectedVisit} testOrders={labTests}/>
-                                    </CardContent>
-                                </Card>
-                            }
-
-                        </Grid.Column>
-                    </Grid>
-                </CardContent>
-            </Card>
-
-
-
-
-            {/*                        <MaterialTable
+      {/*                        <MaterialTable
                             icons={tableIcons}
                             title="Patient Consultationsz"
                             columns={[
@@ -326,9 +347,8 @@ const PatientConsultationHistory = (props) => {
                                 debounceInterval: 400
                             }}
                         />*/}
-        </Container>
-
-    );
+    </Container>
+  );
 };
 
 export default PatientConsultationHistory;

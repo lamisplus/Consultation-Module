@@ -12,7 +12,7 @@
 
 	<groupId>org.lamisplus.modules</groupId>
 	<artifactId>consultation</artifactId>
-	<version>1.0.0</version>
+	<version>2.2.0.1</version>
 	<packaging>jar</packaging>
 	<name>consultation</name>
 	<description>consultation Module</description>

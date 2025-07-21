@@ -12,7 +12,7 @@
     "@fullcalendar/interaction": "^5.4.0",
     "@fullcalendar/react": "^5.4.0",
     "@fullcalendar/timegrid": "^5.4.0",
-    "@hookform/resolvers": "^2.9.0",
+    "@hookform/resolvers": "^5.1.1",
     "@lls/react-light-calendar": "^2.2.0",
     "@loadable/component": "^5.14.1",
     "@material-table/core": "^5.0.4",
@@ -76,7 +76,7 @@
     "react-dropzone-uploader": "^2.11.0",
     "react-dual-listbox": "^2.0.0",
     "react-gradient-timepicker": "0.0.3",
-    "react-hook-form": "^7.31.3",
+    "react-hook-form": "7.54.2",
     "react-icons": "^4.3.1",
     "react-input-colorpicker": "^1.0.13",
     "react-linear-gradient-picker": "^1.1.4",
@@ -145,6 +145,7 @@
   "devDependencies": {
     "eslint": "7.11.0",
     "eslint-config-react": "^1.1.7",
-    "eslint-config-react-app": "^7.0.1"
+    "eslint-config-react-app": "^7.0.1",
+    "husky": "^9.1.7"
   }
 }

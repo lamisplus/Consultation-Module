@@ -1,15 +1,16 @@
-import React, { useState, Fragment } from "react";
-import { Row, Col, Card, Tab, Tabs } from "react-bootstrap";
-import Dashboard from "./Patient/PatientList";
-import ConsultationHistory from "./Patient/ConsultationHistory";
+import React, { useState, Fragment } from 'react';
+import { Row, Col, Card, Tab, Tabs } from 'react-bootstrap';
+import Dashboard from './Patient/PatientList';
+import ConsultationHistory from './Patient/ConsultationHistory';
+import PatientDashboard from './Patient/PatientDashboard';
 
 const divStyle = {
-  borderRadius: "2px",
+  borderRadius: '2px',
   fontSize: 14,
 };
 
 const Home = () => {
-  const [key, setKey] = useState("home");
+  const [key, setKey] = useState('home');
 
   return (
     <Fragment>
@@ -22,14 +23,15 @@ const Home = () => {
                 <Tabs
                   id="controlled-tab-example"
                   activeKey={key}
-                  onSelect={(k) => setKey(k)}
+                  onSelect={k => setKey(k)}
                   className="mb-3"
                 >
                   <Tab eventKey="home" title="Checked In Patients">
                     <Dashboard />
                   </Tab>
                   <Tab eventKey="history" title="Consultation History">
-                    <ConsultationHistory />
+                    {/* <ConsultationHistory /> */}
+                    <PatientDashboard />
                   </Tab>
                 </Tabs>
               </div>

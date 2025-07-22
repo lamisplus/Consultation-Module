@@ -29,10 +29,12 @@ public class Consultation extends Audit<String> {
     private LocalDate encounterDate;
     @Column(name = "visit_notes")
     private String visitNotes;
-    @Column(name = "signature")
-    private String signature;
-    @OneToMany(mappedBy = "consultation", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @JoinColumn(name = "ConsultationId")
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PresentingComplaint> presentingComplaints;
-    @OneToMany(mappedBy = "consultation", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @JoinColumn(name = "ConsultationId")
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Diagnosis> diagnosisList;
 }

@@ -23,7 +23,4 @@ public class PresentingComplaint extends Audit<String> {
     private int severity;
     @Column(name = "date_resolved")
     private LocalDate dateResolved;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "consultation_id", nullable = false)
-    private Consultation consultation;
 }

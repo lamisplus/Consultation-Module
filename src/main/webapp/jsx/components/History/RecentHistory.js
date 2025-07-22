@@ -299,7 +299,7 @@ const Widget = props => {
           );
 
           toast.success('Successfully Saved Consultation and Lab Orders!', {
-            position: toast.POSITION.TOP_RIGHT,
+            position: toast.POSITION.BOTTOM_CENTER,
           });
         } catch (labError) {
           toast.warning(
@@ -1194,7 +1194,7 @@ const Widget = props => {
             </>
             <br />
             {isPharmacyEnabled && (
-              <div>
+              <div className="mb-3">
                 <ButtonMui
                   variant="contained"
                   color="primary"
@@ -1267,6 +1267,7 @@ const Widget = props => {
       </Grid.Column>
 
       <AddPharmacyOrder
+        encounterDate={encounterDate}
         toggle={toggle}
         patientObj={patientObj}
         showModal={pharmacyModal}

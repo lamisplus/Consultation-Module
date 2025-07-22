@@ -46,6 +46,7 @@ import * as moment from "moment";
 import _ from "lodash";
 import VitalsCard from "../Consultation/VitalsCard";
 import { icd10 } from "./icd-10";
+import PostClient from "../Patient/PostClient";
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -107,6 +108,7 @@ const useStyles = makeStyles((theme) => ({
 const Widget = (props) => {
   const classes = useStyles();
   const patientObj = props.patientObj ? props.patientObj : {};
+  const [patientObjs, setpatientObjs] = useState(patientObj);
   //console.log("po", patientObj)
   const [isLabEnabled, setIsLabEnabled] = useState(false);
   const [isPharmacyEnabled, setIsPharmacyEnabled] = useState(false);
@@ -117,7 +119,8 @@ const Widget = (props) => {
   //const [previousConsultation, setPreviousConsultation] = useState([]);
   const [encounterDate, setEncounterDate] = useState(new Date());
   const { handleSubmit, control, getValues, setError, setValue } = useForm();
-  const [body, SetBody] = useState("");
+  const [body, setBody] = useState("");
+  const [signature, setSignature] = useState({ name: "" });
   const [inputFields, setInputFields] = useState([
     { complaint: null, onsetDate: "", severity: 0, dateResolved: "" },
   ]);
@@ -138,6 +141,8 @@ const Widget = (props) => {
   const history = useHistory();
   const toggle = () => setPharmacyModal(!pharmacyModal);
   const toggleOrder = () => setPharmacyOrderModal(!pharmacyOrderModal);
+  const togglePost = () => setModalPost(!modalPost);
+  const [modalPost, setModalPost] = useState(false);
   const [pharmacyOrder, setPharmacyOrder] = useState([]);
   const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState({
     encounterDateTime: "",
@@ -156,6 +161,7 @@ const Widget = (props) => {
   });
   const [errors, setErrors] = useState({});
   const [prevTests, setPrevTests] = useState([]);
+  const [submitted, setSubmitted] = useState(false);
 
   const pharmacy_by_visitId = useCallback(async () => {
     try {
@@ -176,6 +182,10 @@ const Widget = (props) => {
       });
     }
   }, []);
+
+  const handleInputChangeBasic = (e) => {
+    setSignature({ name: e.target.value });
+  };
 
   const validateInputs = () => {
     let temp = { ...errors };
@@ -227,6 +237,7 @@ const Widget = (props) => {
         presentingComplaints,
         visitId: patientObj.visitId,
         visitNotes: body,
+        signature: signature.name,
       };
 
       const consultationResponse = await axios.post(
@@ -304,6 +315,7 @@ const Widget = (props) => {
           position: toast.POSITION.TOP_RIGHT,
         });
       }
+      setSubmitted(true);
     } catch (consultationError) {
       console.error("Consultation error details:", {
         message: consultationError.message,
@@ -448,6 +460,11 @@ const Widget = (props) => {
       });
     }
   }, []);
+
+  const PostPatientService = (row) => {
+    setpatientObjs({ ...patientObj, ...row });
+    setModalPost(!modalPost);
+  };
 
   useEffect(() => {
     loadPharmacyCheck();
@@ -683,7 +700,7 @@ const Widget = (props) => {
                   content_style:
                     "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
                 }}
-                onEditorChange={(newText) => SetBody(newText)}
+                onEditorChange={(newText) => setBody(newText)}
               />
             </div>
             <br />
@@ -1191,16 +1208,68 @@ const Widget = (props) => {
                   onClick={() => handleAddPharmacyOrder()}
                 >
                   <span style={{ textTransform: "capitalize" }}>
-                    Add Pharmacy Order
+                    Add Medication Prescription
                   </span>
                 </ButtonMui>
               </div>
             )}
+
+            <Label
+              as="a"
+              color="blue"
+              style={{ width: "100%", height: "35px", fontSize: "16px" }}
+            >
+              Documentation
+            </Label>
+
+            <div className="form-group mb-3 col-md-4">
+              <br />
+              {/* <Label for="ninNumber">Doctor's signature </Label> */}
+              <Table.Cell style={{ fontWeight: "bold" }}>
+                Doctor's signature
+              </Table.Cell>
+              <input
+                className="form-control"
+                type="text"
+                name="signature"
+                value={signature.name}
+                id="signature"
+                onChange={handleInputChangeBasic}
+                style={{
+                  border: "1px solid #014D88",
+                  borderRadius: "0.2rem",
+                }}
+              />
+            </div>
           </Segment>
-          <Button type={"submit"} variant="contained" color={"primary"}>
-            Submit
-          </Button>
+          {!submitted ? (
+            <Button
+              type={"submit"}
+              variant="contained"
+              color={"primary"}
+              disabled={submitted}
+            >
+              Submit
+            </Button>
+          ) : (
+            ""
+          )}
         </form>
+
+        {submitted ? (
+          <Button
+            style={{
+              backgroundColor: "#014d88",
+              color: "#fff",
+              height: "35px",
+            }}
+            onClick={() => PostPatientService(patientObj)}
+          >
+            Post Patient
+          </Button>
+        ) : (
+          ""
+        )}
       </Grid.Column>
 
       <AddPharmacyOrder
@@ -1213,6 +1282,11 @@ const Widget = (props) => {
         patientObj={patientObj}
         showModal={pharmacyOrderModal}
         editPharmacyOrderValue={editPharmacyOrderValue}
+      />
+      <PostClient
+        toggle={togglePost}
+        showModal={modalPost}
+        patientObj={patientObj}
       />
     </Grid>
   );

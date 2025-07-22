@@ -141,7 +141,9 @@ function PatientCard(props) {
                 >
                   <span>
                     Date Of Birth :{" "}
-                    <b style={{ color: "#0B72AA" }}>{patientObj.dateOfBirth}</b>
+                    <b style={{ color: "#0B72AA" }}>
+                      {patientObj.dateOfBirth || patientObj.dateofbirth}{" "}
+                    </b>
                   </span>
                 </Col>
                 <Col
@@ -153,7 +155,9 @@ function PatientCard(props) {
                     {" "}
                     Age :{" "}
                     <b style={{ color: "#0B72AA" }}>
-                      {calculate_age(patientObj.dateOfBirth)}
+                      {calculate_age(
+                        patientObj.dateOfBirth || patientObj.dateofbirth
+                      )}
                     </b>
                   </span>
                 </Col>
@@ -211,7 +215,7 @@ function PatientCard(props) {
                 </MatButton>
               </Button>
             </Link>{" "}
-            <Button
+            {/* <Button
               floated="right"
               style={{
                 backgroundColor: "#014d88",
@@ -221,13 +225,13 @@ function PatientCard(props) {
               onClick={() => PostPatientService(patientObj)}
             >
               Post Patient
-            </Button>
+            </Button> */}
           </div>
         </ExpansionPanelActions>
       </ExpansionPanel>
 
       {/* <PostPatient toggle={toggle} showModal={modal} patientObj={patientObj} /> */}
-      <PostClient toggle={toggle} showModal={modal} patientObj={patientObj} />
+      {/* <PostClient toggle={toggle} showModal={modal} patientObj={patientObj} /> */}
     </div>
   );
 }

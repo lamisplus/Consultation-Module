@@ -107,25 +107,20 @@ const useStyles = makeStyles(theme => ({
 
 const Widget = props => {
   const classes = useStyles();
-  const patientObjs = props.patientObj ? props.patientObj : {};
-  const [patientObj, setpatientObj] = useState(patientObjs);
-
+  const patientObj = props.patientObj ? props.patientObj : {};
+  const [patientObjs, setpatientObjs] = useState(patientObj);
+  //console.log("po", patientObj)
   const [isLabEnabled, setIsLabEnabled] = useState(false);
   const [isPharmacyEnabled, setIsPharmacyEnabled] = useState(false);
   const [hasAllergies, setHasAllergies] = useState(false);
   const [pharmacyModal, setPharmacyModal] = useState(false);
   const [pharmacyOrderModal, setPharmacyOrderModal] = useState(false);
   const [otherVisitsVitals, setOtherVisitVitals] = useState([]);
+  //const [previousConsultation, setPreviousConsultation] = useState([]);
   const [encounterDate, setEncounterDate] = useState(new Date());
-  const {
-    handleSubmit,
-    control,
-    getValues,
-    setError,
-    setValue,
-    formState: { isSubmitting },
-  } = useForm();
-  const [body, SetBody] = useState('');
+  const { handleSubmit, control, getValues, setError, setValue } = useForm();
+  const [body, setBody] = useState('');
+  const [signature, setSignature] = useState({ name: '' });
   const [inputFields, setInputFields] = useState([
     { complaint: null, onsetDate: '', severity: 0, dateResolved: '' },
   ]);
@@ -146,6 +141,8 @@ const Widget = props => {
   const history = useHistory();
   const toggle = () => setPharmacyModal(!pharmacyModal);
   const toggleOrder = () => setPharmacyOrderModal(!pharmacyOrderModal);
+  const togglePost = () => setModalPost(!modalPost);
+  const [modalPost, setModalPost] = useState(false);
   const [pharmacyOrder, setPharmacyOrder] = useState([]);
   const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState({
     encounterDateTime: '',
@@ -164,6 +161,7 @@ const Widget = props => {
   });
   const [errors, setErrors] = useState({});
   const [prevTests, setPrevTests] = useState([]);
+  const [submitted, setSubmitted] = useState(false);
 
   const pharmacy_by_visitId = useCallback(async () => {
     try {
@@ -184,6 +182,10 @@ const Widget = props => {
       });
     }
   }, []);
+
+  const handleInputChangeBasic = e => {
+    setSignature({ name: e.target.value });
+  };
 
   const validateInputs = () => {
     let temp = { ...errors };
@@ -235,6 +237,7 @@ const Widget = props => {
         presentingComplaints,
         visitId: patientObj.visitId,
         visitNotes: body,
+        signature: signature.name,
       };
 
       const consultationResponse = await axios.post(
@@ -312,6 +315,7 @@ const Widget = props => {
           position: toast.POSITION.TOP_RIGHT,
         });
       }
+      setSubmitted(true);
     } catch (consultationError) {
       console.error('Consultation error details:', {
         message: consultationError.message,
@@ -456,6 +460,11 @@ const Widget = props => {
       });
     }
   }, []);
+
+  const PostPatientService = row => {
+    setpatientObjs({ ...patientObj, ...row });
+    setModalPost(!modalPost);
+  };
 
   useEffect(() => {
     loadPharmacyCheck();
@@ -608,14 +617,6 @@ const Widget = props => {
         });
       });
   };
-  const PostPatientService = row => {
-    setpatientObj({ ...patientObj, ...row });
-    setModal(!modal);
-  };
-
-  const [modal, setModal] = useState(false);
-
-  // Example usage
 
   return (
     <Grid columns="equal">
@@ -641,7 +642,7 @@ const Widget = props => {
                   fontSize: '14px',
                 }}
               >
-                Encounter Date
+                Encounter Dates
               </span>
               <MuiPickersUtilsProvider utils={DateFnsUtils}>
                 <Controller
@@ -699,7 +700,7 @@ const Widget = props => {
                   content_style:
                     'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
                 }}
-                onEditorChange={newText => SetBody(newText)}
+                onEditorChange={newText => setBody(newText)}
               />
             </div>
             <br />
@@ -1206,20 +1207,66 @@ const Widget = props => {
                 </ButtonMui>
               </div>
             )}
+
+            <Label
+              as="a"
+              color="blue"
+              style={{ width: '100%', height: '35px', fontSize: '16px' }}
+            >
+              Documentation
+            </Label>
+
+            <div className="form-group mb-3 col-md-4">
+              <br />
+              {/* <Label for="ninNumber">Doctor's signature </Label> */}
+              <Table.Cell style={{ fontWeight: 'bold' }}>
+                Doctor's signature
+              </Table.Cell>
+              <input
+                className="form-control"
+                type="text"
+                name="signature"
+                value={signature.name}
+                id="signature"
+                onChange={handleInputChangeBasic}
+                style={{
+                  border: '1px solid #014D88',
+                  borderRadius: '0.2rem',
+                }}
+              />
+            </div>
           </Segment>
-          <Button
-            type={'submit'}
-            variant="contained"
-            color={'primary'}
-            disabled={isSubmitting}
-          >
-            Submit
-          </Button>
+          {!submitted ? (
+            <Button
+              type={'submit'}
+              variant="contained"
+              color={'primary'}
+              disabled={submitted}
+            >
+              Submit
+            </Button>
+          ) : (
+            ''
+          )}
         </form>
+
+        {submitted ? (
+          <Button
+            style={{
+              backgroundColor: '#014d88',
+              color: '#fff',
+              height: '35px',
+            }}
+            onClick={() => PostPatientService(patientObj)}
+          >
+            Post Patient
+          </Button>
+        ) : (
+          ''
+        )}
       </Grid.Column>
 
       <AddPharmacyOrder
-        encounterDate={encounterDate}
         toggle={toggle}
         patientObj={patientObj}
         showModal={pharmacyModal}
@@ -1229,6 +1276,11 @@ const Widget = props => {
         patientObj={patientObj}
         showModal={pharmacyOrderModal}
         editPharmacyOrderValue={editPharmacyOrderValue}
+      />
+      <PostClient
+        toggle={togglePost}
+        showModal={modalPost}
+        patientObj={patientObj}
       />
     </Grid>
   );

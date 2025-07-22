@@ -9,4 +9,8 @@ public interface PatientConsultationProjection {
     Long getPatientId();
     java.time.LocalDate getEncounterDate();
     Long getVisitId();
+    java.time.LocalDate getDateofbirth();
+
+    String getPhoneNumber();
+    String getAddress();
 }

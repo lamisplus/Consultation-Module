@@ -50,23 +50,73 @@ public interface ConsultationRepository extends JpaRepository<Consultation, Inte
 
     @Query(value =
             "SELECT \n" +
-                    "    p.first_name AS firstName, \n" +
-                    "    p.surname AS surname, \n" +
-                    "    p.other_name AS otherName, \n" +
-                    "    p.hospital_number AS hospitalNumber, \n" +
-                    "    p.sex AS sex, \n" +
-                    "    c.patient_id AS patientId, \n" +
-                    "    c.encounter_date AS encounterDate, \n" +
-                    "    c.visit_id AS visitId\n" +
-                    "FROM \n" +
-                    "    patient_person p\n" +
-                    "JOIN \n" +
-                    "    consultation c ON c.patient_id = p.id\n" +
-                    "WHERE \n" +
-                    "    LOWER(p.first_name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR\n" +
-                    "    LOWER(p.surname) LIKE LOWER(CONCAT('%', :keyword, '%')) OR\n" +
-                    "    LOWER(p.other_name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR\n" +
-                    "    LOWER(p.hospital_number) LIKE LOWER(CONCAT('%', :keyword, '%'))\n",
+                    "\t\tp.first_name AS firstName, \n" +
+                    "\t\tp.surname AS surname, \n" +
+                    "\t\tp.other_name AS otherName, \n" +
+                    "\t\tp.hospital_number AS hospitalNumber, \n" +
+                    "\t\tp.sex AS sex, \n" +
+                    "\t\tc.patient_id AS patientId, \n" +
+                    "\t\tc.encounter_date AS encounterDate, \n" +
+                    "\t\tc.visit_id AS visitId,\n" +
+                    "\t\tp.date_of_birth As dateofbirth,\n" +
+                    "\t\tCOALESCE(\n" +
+                    "                 (p.contact -> 'contact' -> 0 -> 'contactPoint' ->> 'value'),\n" +
+                    "                 (p.contact_point -> 'contactPoint' -> 0 ->> 'value'),\n" +
+                    "                 (p.contact_point -> 'contactPoint' -> 1 ->> 'value')\n" +
+                    "             ) AS phoneNumber,\n" +
+                    "\t\tCOALESCE(\n" +
+                    "                 CASE \n" +
+                    "                     WHEN p.contact -> 'contact' -> 0 -> 'address' IS NOT NULL \n" +
+                    "                     THEN TRIM(CONCAT_WS(' ',\n" +
+                    "                        \n" +
+                    "                         CASE \n" +
+                    "                             WHEN p.contact -> 'contact' -> 0 -> 'address' -> 'line' IS NOT NULL \n" +
+                    "                             THEN array_to_string(\n" +
+                    "                                 ARRAY(\n" +
+                    "                                     SELECT value\n" +
+                    "                                     FROM jsonb_array_elements_text(p.contact -> 'contact' -> 0 -> 'address' -> 'line') AS value\n" +
+                    "                                     WHERE value IS NOT NULL AND value != ''\n" +
+                    "                                 ), \n" +
+                    "                                 ' '\n" +
+                    "                             )\n" +
+                    "                             ELSE NULL\n" +
+                    "                         END,\n" +
+                    "                       \n" +
+                    "                         NULLIF(p.contact -> 'contact' -> 0 -> 'address' ->> 'city', '')\n" +
+                    "                     ))\n" +
+                    "                     ELSE NULL\n" +
+                    "                 END,\n" +
+                    "                 \n" +
+                    "                 CASE \n" +
+                    "                     WHEN p.address -> 'address' -> 0 IS NOT NULL \n" +
+                    "                     THEN TRIM(CONCAT_WS(' ',\n" +
+                    "                         \n" +
+                    "                         CASE \n" +
+                    "                             WHEN p.address -> 'address' -> 0 -> 'line' IS NOT NULL \n" +
+                    "                             THEN array_to_string(\n" +
+                    "                                 ARRAY(\n" +
+                    "                                     SELECT value\n" +
+                    "                                     FROM jsonb_array_elements_text(p.address -> 'address' -> 0 -> 'line') AS value\n" +
+                    "                                     WHERE value IS NOT NULL AND value != ''\n" +
+                    "                                 ), \n" +
+                    "                                 ' '\n" +
+                    "                             )\n" +
+                    "                             ELSE NULL\n" +
+                    "                         END,\n" +
+                    "                         NULLIF(p.address -> 'address' -> 0 ->> 'city', '')\n" +
+                    "                     ))\n" +
+                    "                     ELSE NULL\n" +
+                    "                 END\n" +
+                    "             ) AS address\n" +
+                    "\tFROM \n" +
+                    "\tpatient_person p\n" +
+                    "\tJOIN \n" +
+                    "\tconsultation c ON c.patient_id = p.id\n" +
+                    "\tWHERE \n" +
+                    "\tLOWER(p.first_name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR\n" +
+                    "\tLOWER(p.surname) LIKE LOWER(CONCAT('%', :keyword, '%')) OR\n" +
+                    "\tLOWER(p.other_name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR\n" +
+                    "\tLOWER(p.hospital_number) LIKE LOWER(CONCAT('%', :keyword, '%'))",
             nativeQuery = true)
     Page<PatientConsultationProjection> findByPatientIdWithConsultation(@Param("keyword") String keyword, Pageable pageable);
 }

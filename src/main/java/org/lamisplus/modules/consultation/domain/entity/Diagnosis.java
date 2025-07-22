@@ -21,4 +21,8 @@ public class Diagnosis extends Audit<String> {
     private int diagnosisOrder;
     @Column(name = "certainty")
     private int certainty;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "consultation_id", nullable = false)
+    private Consultation consultation;
 }

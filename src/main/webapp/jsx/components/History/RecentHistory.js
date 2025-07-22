@@ -1,16 +1,16 @@
-import React, { Fragment, useState, useCallback, useEffect } from "react";
+import React, { Fragment, useState, useCallback, useEffect } from 'react';
 import {
   KeyboardDateTimePicker,
   MuiPickersUtilsProvider,
   KeyboardDatePicker,
-} from "@material-ui/pickers";
-import { useForm, Controller } from "react-hook-form";
-import DateFnsUtils from "@date-io/date-fns";
-import TextField from "@mui/material/TextField";
-import Autocomplete from "@mui/material/Autocomplete";
-import axios from "axios";
-import { toast } from "react-toastify";
-import { token, url as baseUrl, apiUrl as apiUrl } from "../../../api";
+} from '@material-ui/pickers';
+import { useForm, Controller } from 'react-hook-form';
+import DateFnsUtils from '@date-io/date-fns';
+import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { token, url as baseUrl, apiUrl as apiUrl } from '../../../api';
 import {
   Grid,
   Segment,
@@ -22,40 +22,41 @@ import {
   Feed,
   Input,
   Radio,
-} from "semantic-ui-react";
-import "tinymce/tinymce";
-import "tinymce/icons/default";
-import "tinymce/themes/silver";
-import "tinymce/plugins/link";
-import "tinymce/plugins/image";
-import "tinymce/plugins/table";
-import "tinymce/skins/ui/oxide/skin.min.css";
-import "tinymce/skins/ui/oxide/content.min.css";
-import "tinymce/models/dom/model";
-import "tinymce/skins/content/default/content.min.css";
-import { Editor } from "@tinymce/tinymce-react";
-import Box from "@mui/material/Box";
-import { Checkbox, Table } from "semantic-ui-react";
-import { format } from "date-fns";
-import { Link, useHistory } from "react-router-dom";
-import ButtonMui from "@material-ui/core/Button";
-import AddPharmacyOrder from "./AddPharmacyOrder";
-import EditPharmacyOrder from "./EditPharmacyOrder";
-import { makeStyles } from "@material-ui/core/styles";
-import * as moment from "moment";
-import _ from "lodash";
-import VitalsCard from "../Consultation/VitalsCard";
-import { icd10 } from "./icd-10";
+} from 'semantic-ui-react';
+import 'tinymce/tinymce';
+import 'tinymce/icons/default';
+import 'tinymce/themes/silver';
+import 'tinymce/plugins/link';
+import 'tinymce/plugins/image';
+import 'tinymce/plugins/table';
+import 'tinymce/skins/ui/oxide/skin.min.css';
+import 'tinymce/skins/ui/oxide/content.min.css';
+import 'tinymce/models/dom/model';
+import 'tinymce/skins/content/default/content.min.css';
+import { Editor } from '@tinymce/tinymce-react';
+import Box from '@mui/material/Box';
+import { Checkbox, Table } from 'semantic-ui-react';
+import { format } from 'date-fns';
+import { Link, useHistory } from 'react-router-dom';
+import ButtonMui from '@material-ui/core/Button';
+import AddPharmacyOrder from './AddPharmacyOrder';
+import EditPharmacyOrder from './EditPharmacyOrder';
+import { makeStyles } from '@material-ui/core/styles';
+import * as moment from 'moment';
+import _ from 'lodash';
+import VitalsCard from '../Consultation/VitalsCard';
+import { icd10 } from './icd-10';
+import PostClient from '../Patient/PostClient';
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
   card: {
     margin: theme.spacing(20),
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   form: {
-    width: "100%", // Fix IE 11 issue.
+    width: '100%', // Fix IE 11 issue.
     marginTop: theme.spacing(3),
   },
   submit: {
@@ -73,40 +74,41 @@ const useStyles = makeStyles((theme) => ({
   },
 
   root: {
-    "& > *": {
+    '& > *': {
       margin: theme.spacing(1),
     },
   },
   input: {
     //border:'1px solid #014d88',
-    borderRadius: "0px",
-    fontSize: "14px",
-    color: "#000",
+    borderRadius: '0px',
+    fontSize: '14px',
+    color: '#000',
   },
   error: {
-    color: "#f85032",
-    fontSize: "11px",
+    color: '#f85032',
+    fontSize: '11px',
   },
   success: {
-    color: "#4BB543 ",
-    fontSize: "11px",
+    color: '#4BB543 ',
+    fontSize: '11px',
   },
   inputGroupText: {
-    backgroundColor: "#014d88",
-    fontWeight: "bolder",
-    color: "#fff",
-    borderRadius: "0px",
+    backgroundColor: '#014d88',
+    fontWeight: 'bolder',
+    color: '#fff',
+    borderRadius: '0px',
   },
   label: {
-    fontSize: "14px",
-    color: "#014d88",
-    fontWeight: "600",
+    fontSize: '14px',
+    color: '#014d88',
+    fontWeight: '600',
   },
 }));
 
-const Widget = (props) => {
+const Widget = props => {
   const classes = useStyles();
   const patientObj = props.patientObj ? props.patientObj : {};
+  const [patientObjs, setpatientObjs] = useState(patientObj);
   //console.log("po", patientObj)
   const [isLabEnabled, setIsLabEnabled] = useState(false);
   const [isPharmacyEnabled, setIsPharmacyEnabled] = useState(false);
@@ -117,20 +119,21 @@ const Widget = (props) => {
   //const [previousConsultation, setPreviousConsultation] = useState([]);
   const [encounterDate, setEncounterDate] = useState(new Date());
   const { handleSubmit, control, getValues, setError, setValue } = useForm();
-  const [body, SetBody] = useState("");
+  const [body, setBody] = useState('');
+  const [signature, setSignature] = useState({ name: '' });
   const [inputFields, setInputFields] = useState([
-    { complaint: null, onsetDate: "", severity: 0, dateResolved: "" },
+    { complaint: null, onsetDate: '', severity: 0, dateResolved: '' },
   ]);
   const [inputFieldsDiagnosis, setInputFieldsDiagnosis] = useState([
-    { certainty: "", diagnosis: null, diagnosisOrder: 0 },
+    { certainty: '', diagnosis: null, diagnosisOrder: 0 },
   ]);
 
   const [inputFieldsLab, setInputFieldsLab] = useState([
     {
-      encounterDate: format(new Date(), "yyyy-MM-dd"),
-      labOrder: "",
-      labTest: "",
-      priority: "",
+      encounterDate: format(new Date(), 'yyyy-MM-dd'),
+      labOrder: '',
+      labTest: '',
+      priority: '',
       status: 0,
     },
   ]);
@@ -138,24 +141,27 @@ const Widget = (props) => {
   const history = useHistory();
   const toggle = () => setPharmacyModal(!pharmacyModal);
   const toggleOrder = () => setPharmacyOrderModal(!pharmacyOrderModal);
+  const togglePost = () => setModalPost(!modalPost);
+  const [modalPost, setModalPost] = useState(false);
   const [pharmacyOrder, setPharmacyOrder] = useState([]);
   const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState({
-    encounterDateTime: "",
-    drugName: "",
-    dosageStrength: "",
-    dosageStrengthUnit: "",
-    dosageFrequency: "",
-    startDate: "",
-    duration: "",
-    durationUnit: "",
-    comments: "",
+    encounterDateTime: '',
+    drugName: '',
+    dosageStrength: '',
+    dosageStrengthUnit: '',
+    dosageFrequency: '',
+    startDate: '',
+    duration: '',
+    durationUnit: '',
+    comments: '',
     patientId: patientObj.id,
-    orderedBy: "",
-    dateTimePrescribed: "",
+    orderedBy: '',
+    dateTimePrescribed: '',
     visitId: patientObj.visitId,
   });
   const [errors, setErrors] = useState({});
   const [prevTests, setPrevTests] = useState([]);
+  const [submitted, setSubmitted] = useState(false);
 
   const pharmacy_by_visitId = useCallback(async () => {
     try {
@@ -164,69 +170,74 @@ const Widget = (props) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (typeof response.data === "string") {
+      if (typeof response.data === 'string') {
         setPharmacyOrder([]);
       } else {
         //console.log("red",response.data)
         setPharmacyOrder(response.data);
       }
     } catch (e) {
-      toast.error("An error occurred while fetching pharmacy data", {
+      toast.error('An error occurred while fetching pharmacy data', {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
   }, []);
 
+  const handleInputChangeBasic = e => {
+    setSignature({ name: e.target.value });
+  };
+
   const validateInputs = () => {
     let temp = { ...errors };
-    temp.body = body ? "" : "Visit note is required.";
+    temp.body = body ? '' : 'Visit note is required.';
 
-    inputFields.map((x) => {
-      temp.onsetDate = x.onsetDate ? "" : "On Set Date is required.";
-      temp.complaint = x.complaint ? "" : "Complaint is required.";
-      temp.severity = x.severity ? "" : "Severity is required.";
+    inputFields.map(x => {
+      temp.onsetDate = x.onsetDate ? '' : 'On Set Date is required.';
+      temp.complaint = x.complaint ? '' : 'Complaint is required.';
+      temp.severity = x.severity ? '' : 'Severity is required.';
     });
 
-    inputFieldsDiagnosis.map((y) => {
-      temp.diagnosis = y.diagnosis ? "" : "Condition is required.";
+    inputFieldsDiagnosis.map(y => {
+      temp.diagnosis = y.diagnosis ? '' : 'Condition is required.';
       temp.diagnosisOrder = y.diagnosisOrder
-        ? ""
-        : "Diagnosis Order is required.";
-      temp.certainty = y.certainty ? "" : "Diagnosis Certainty is required.";
+        ? ''
+        : 'Diagnosis Order is required.';
+      temp.certainty = y.certainty ? '' : 'Diagnosis Certainty is required.';
     });
 
     setErrors({
       ...temp,
     });
 
-    return Object.values(temp).every((x) => x == "");
+    return Object.values(temp).every(x => x == '');
   };
 
-  const onSubmit = async (data) => {
+  const onSubmit = async data => {
     if (!validateInputs()) {
       return;
     }
 
     try {
       const diagnosisList = inputFieldsDiagnosis
-        .filter((field) => field.diagnosis)
-        .map((field) => ({ ...field }));
+        .filter(field => field.diagnosis)
+        .map(field => ({ ...field }));
 
       const presentingComplaints = inputFields
-        .filter((field) => field.complaint)
-        .map((field) => ({ ...field }));
+        .filter(field => field.complaint)
+        .map(field => ({ ...field }));
 
       const consultationData = {
         diagnosisList,
         encounterDate: format(
           new Date(data.encounterDate.toString()),
-          "yyyy-MM-dd"
+          'yyyy-MM-dd'
         ),
         id: 0,
         patientId: patientObj.id,
         presentingComplaints,
         visitId: patientObj.visitId,
         visitNotes: body,
+        signature: signature.name,
       };
 
       const consultationResponse = await axios.post(
@@ -237,18 +248,18 @@ const Widget = (props) => {
 
       const labTests = inputFieldsLab
         .filter(
-          (field) =>
+          field =>
             field.encounterDate &&
             field.labOrder &&
             field.labTest &&
             field.priority
         )
-        .map((field) => {
-          const labOrderParts = field.labOrder.split("-");
+        .map(field => {
+          const labOrderParts = field.labOrder.split('-');
           const labTestGroupId = parseInt(labOrderParts[0], 10);
           const description =
             labOrderParts.length > 1
-              ? labOrderParts.slice(1).join("-")
+              ? labOrderParts.slice(1).join('-')
               : field.labOrder.slice(2);
 
           return {
@@ -270,7 +281,7 @@ const Widget = (props) => {
           visitId: patientObj.visitId,
           orderDate: format(
             new Date(data.encounterDate.toString()),
-            "yyyy-MM-dd HH:mm:ss"
+            'yyyy-MM-dd HH:mm:ss'
           ),
           tests: labTests,
           orderedDate: null,
@@ -287,12 +298,12 @@ const Widget = (props) => {
             }
           );
 
-          toast.success("Successfully Saved Consultation and Lab Orders!", {
-            position: toast.POSITION.TOP_RIGHT,
+          toast.success('Successfully Saved Consultation and Lab Orders!', {
+            position: toast.POSITION.BOTTOM_CENTER,
           });
         } catch (labError) {
           toast.warning(
-            "Consultation saved, but lab orders failed. Error: " +
+            'Consultation saved, but lab orders failed. Error: ' +
               (labError.response?.data?.error || labError.message),
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -300,12 +311,13 @@ const Widget = (props) => {
           );
         }
       } else {
-        toast.success("Successfully Saved Consultation!", {
+        toast.success('Successfully Saved Consultation!', {
           position: toast.POSITION.TOP_RIGHT,
         });
       }
+      setSubmitted(true);
     } catch (consultationError) {
-      console.error("Consultation error details:", {
+      console.error('Consultation error details:', {
         message: consultationError.message,
         response: consultationError.response?.data,
         status: consultationError.response?.status,
@@ -323,7 +335,7 @@ const Widget = (props) => {
   };
 
   // Additional validation to ensure data is clean
-  const validateLabTestData = (labTests) => {
+  const validateLabTestData = labTests => {
     for (let i = 0; i < labTests.length; i++) {
       const test = labTests[i];
 
@@ -345,7 +357,7 @@ const Widget = (props) => {
         );
       }
 
-      if (!test.description || test.description.trim() === "") {
+      if (!test.description || test.description.trim() === '') {
         throw new Error(`Empty description for test ${i + 1}`);
       }
     }
@@ -355,9 +367,9 @@ const Widget = (props) => {
 
   // You can call this function before submitting to debug
   // debugLabOrderData();
-  const OnError = (errors) => {
+  const OnError = errors => {
     console.error(errors);
-    toast.error("Visit Note Is Required", {
+    toast.error('Visit Note Is Required', {
       position: toast.POSITION.TOP_RIGHT,
     });
   };
@@ -375,7 +387,7 @@ const Widget = (props) => {
       );
       setIsLabEnabled(response.data);
     } catch (e) {
-      toast.error("An error occurred while fetching lab", {
+      toast.error('An error occurred while fetching lab', {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
@@ -389,7 +401,7 @@ const Widget = (props) => {
       );
       setIsPharmacyEnabled(response.data);
     } catch (e) {
-      toast.error("An error occurred while fetching pharmacy", {
+      toast.error('An error occurred while fetching pharmacy', {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
@@ -408,7 +420,7 @@ const Widget = (props) => {
         setOtherVisitVitals(otherVisits);
       }
     } catch (e) {
-      toast.error("An error occurred while fetching vitals", {
+      toast.error('An error occurred while fetching vitals', {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
@@ -421,14 +433,14 @@ const Widget = (props) => {
       });
       setLabGroups(response.data);
       let arr = [];
-      response.data.map((x) => {
-        x.labTests.map((y) => {
+      response.data.map(x => {
+        x.labTests.map(y => {
           arr.push(y);
         });
       });
       setPrevTests(arr);
     } catch (e) {
-      toast.error("An error occurred while fetching lap group data", {
+      toast.error('An error occurred while fetching lap group data', {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
@@ -443,11 +455,16 @@ const Widget = (props) => {
       //console.log("priority", response.data);
       setPriorities(response.data);
     } catch (e) {
-      toast.error("An error occurred while fetching priority data", {
+      toast.error('An error occurred while fetching priority data', {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
   }, []);
+
+  const PostPatientService = row => {
+    setpatientObjs({ ...patientObj, ...row });
+    setModalPost(!modalPost);
+  };
 
   useEffect(() => {
     loadPharmacyCheck();
@@ -466,24 +483,24 @@ const Widget = (props) => {
       .get(`${baseUrl}patient/vital-sign/visit/${patientObj.visitId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then((response) => {
+      .then(response => {
         setVitalSignDto(response.data);
       })
-      .catch((error) => {});
+      .catch(error => {});
   }
 
   const handleAddFields = () => {
     const values = [...inputFields];
     values.push({
-      complaint: "",
-      onsetDate: "",
+      complaint: '',
+      onsetDate: '',
       severity: 0,
-      dateResolved: "",
+      dateResolved: '',
     });
     setInputFields(values);
   };
 
-  const removeHandleAddFields = (e) => {
+  const removeHandleAddFields = e => {
     e.preventDefault();
     const values = [...inputFields];
     values.pop();
@@ -492,11 +509,11 @@ const Widget = (props) => {
 
   const handleAddDiagFields = () => {
     const values = [...inputFieldsDiagnosis];
-    values.push({ certainty: "", diagnosis: "", diagnosisOrder: 0 });
+    values.push({ certainty: '', diagnosis: '', diagnosisOrder: 0 });
     setInputFieldsDiagnosis(values);
   };
 
-  const removeHandleAddDiagFields = (e) => {
+  const removeHandleAddDiagFields = e => {
     e.preventDefault();
     const values = [...inputFieldsDiagnosis];
     values.pop();
@@ -507,17 +524,17 @@ const Widget = (props) => {
     const values = [...inputFieldsLab];
 
     values.push({
-      encounterDate: format(new Date(), "yyyy-MM-dd"),
-      labOrder: "",
-      labTest: "",
-      priority: "",
-      status: "",
+      encounterDate: format(new Date(), 'yyyy-MM-dd'),
+      labOrder: '',
+      labTest: '',
+      priority: '',
+      status: '',
     });
 
     setInputFieldsLab(values);
   };
 
-  const removeHandleAddFieldsLab = (e) => {
+  const removeHandleAddFieldsLab = e => {
     e.preventDefault();
     const values = [...inputFieldsLab];
 
@@ -527,13 +544,13 @@ const Widget = (props) => {
 
   const handleInputChange = (index, event) => {
     const values = [...inputFields];
-    if (typeof event === "string") {
+    if (typeof event === 'string') {
       values[index].complaint = event;
-    } else if (event.target.name === "onsetDate") {
+    } else if (event.target.name === 'onsetDate') {
       values[index].onsetDate = event.target.value;
-    } else if (event.target.name === "severity") {
+    } else if (event.target.name === 'severity') {
       values[index].severity = event.target.value;
-    } else if (event.target.name === "dateResolved") {
+    } else if (event.target.name === 'dateResolved') {
       values[index].dateResolved = event.target.value;
     }
 
@@ -542,17 +559,17 @@ const Widget = (props) => {
 
   const handleInputDiagChange = (index, event) => {
     const values = [...inputFieldsDiagnosis];
-    if (typeof event === "string") {
+    if (typeof event === 'string') {
       values[index].diagnosis = event;
-    } else if (event.target.name === "certainty") {
+    } else if (event.target.name === 'certainty') {
       values[index].certainty = event.target.value;
-    } else if (event.target.name === "diagnosisOrder") {
+    } else if (event.target.name === 'diagnosisOrder') {
       values[index].diagnosisOrder = event.target.value;
     }
     setInputFieldsDiagnosis(values);
   };
 
-  const labCascade = (id) => {
+  const labCascade = id => {
     labGroups.forEach(function (x) {
       if (x.id == id) {
         setLabTests(x.labTests);
@@ -562,15 +579,15 @@ const Widget = (props) => {
 
   const handleInputLabChange = (index, event) => {
     const values = [...inputFieldsLab];
-    if (event.target.name === "labOrder") {
+    if (event.target.name === 'labOrder') {
       const str = event.target.value;
       values[index].labOrder = str;
       labCascade(str.slice(0, 1));
-    } else if (event.target.name === "labTest") {
+    } else if (event.target.name === 'labTest') {
       values[index].labTest = event.target.value;
-    } else if (event.target.name === "priority") {
+    } else if (event.target.name === 'priority') {
       values[index].priority = event.target.value;
-    } else if (event.target.name === "status") {
+    } else if (event.target.name === 'status') {
       values[index].status = event.target.value;
     }
 
@@ -581,21 +598,21 @@ const Widget = (props) => {
     setPharmacyModal(!pharmacyModal);
   };
 
-  const handleEditPharmacyOrder = (pharmacy) => {
+  const handleEditPharmacyOrder = pharmacy => {
     console.log(pharmacy);
     setEditPharmacyOrderValue(pharmacy);
     setPharmacyOrderModal(!pharmacyOrderModal);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async id => {
     console.log(id);
     await axios
       .delete(`${apiUrl}drug-orders/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then((resp) => {
-        console.log("drug order deleted");
-        toast.success("Successfully deleted drug order!", {
+      .then(resp => {
+        console.log('drug order deleted');
+        toast.success('Successfully deleted drug order!', {
           position: toast.POSITION.TOP_RIGHT,
         });
       });
@@ -609,7 +626,7 @@ const Widget = (props) => {
           <Label
             as="a"
             color="black"
-            style={{ width: "100%", height: "35px", fontSize: "16px" }}
+            style={{ width: '100%', height: '35px', fontSize: '16px' }}
           >
             <b>Physical Examination</b>
           </Label>
@@ -619,10 +636,10 @@ const Widget = (props) => {
               <span
                 className="input-group-text"
                 style={{
-                  height: "40px",
-                  backgroundColor: "#014d88",
-                  color: "#fff",
-                  fontSize: "14px",
+                  height: '40px',
+                  backgroundColor: '#014d88',
+                  color: '#fff',
+                  fontSize: '14px',
                 }}
               >
                 Encounter Dates
@@ -635,13 +652,13 @@ const Widget = (props) => {
                   rules={{ required: true }}
                   render={({ field: { ref, ...rest } }) => (
                     <KeyboardDateTimePicker
-                      style={{ height: "40px", border: "1px solid #014d88" }}
+                      style={{ height: '40px', border: '1px solid #014d88' }}
                       disableFuture
                       format="dd/MM/yyyy hh:mm a"
                       value={encounterDate}
                       onChange={setEncounterDate}
                       className="form-control"
-                      invalidDateMessage={"Encounter date is required"}
+                      invalidDateMessage={'Encounter date is required'}
                       {...rest}
                     />
                   )}
@@ -653,19 +670,19 @@ const Widget = (props) => {
               <Label
                 as="a"
                 style={{
-                  backgroundColor: "#014d88",
-                  color: "#fff",
-                  width: "100%",
-                  height: "35px",
-                  fontSize: "16px",
+                  backgroundColor: '#014d88',
+                  color: '#fff',
+                  width: '100%',
+                  height: '35px',
+                  fontSize: '16px',
                 }}
               >
                 {"Patient's visit note"}
               </Label>
-              {errors.body != "" ? (
+              {errors.body != '' ? (
                 <span className={classes.error}>{errors.body}</span>
               ) : (
-                ""
+                ''
               )}
               <Editor
                 textareaName="visitNote"
@@ -676,40 +693,40 @@ const Widget = (props) => {
                   menubar: false,
                   plugins: [],
                   toolbar:
-                    "undo redo | formatselect | " +
-                    "bold italic backcolor | alignleft aligncenter " +
-                    "alignright alignjustify | bullist numlist outdent indent | " +
-                    "removeformat | help",
+                    'undo redo | formatselect | ' +
+                    'bold italic backcolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'removeformat | help',
                   content_style:
-                    "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+                    'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
                 }}
-                onEditorChange={(newText) => SetBody(newText)}
+                onEditorChange={newText => setBody(newText)}
               />
             </div>
             <br />
             <Label
               as="a"
               style={{
-                backgroundColor: "#014d88",
-                color: "#fff",
-                width: "100%",
-                height: "35px",
-                fontSize: "16px",
+                backgroundColor: '#014d88',
+                color: '#fff',
+                width: '100%',
+                height: '35px',
+                fontSize: '16px',
               }}
             >
               Presenting Complaints
             </Label>
 
-            <Table style={{ color: "#014d88", borderColor: "#014d88" }} celled>
+            <Table style={{ color: '#014d88', borderColor: '#014d88' }} celled>
               <Table.Header>
                 <Table.Row>
-                  <Table.Cell style={{ fontWeight: "bold" }}>
+                  <Table.Cell style={{ fontWeight: 'bold' }}>
                     Complaints
                   </Table.Cell>
-                  <Table.Cell style={{ fontWeight: "bold" }}>
+                  <Table.Cell style={{ fontWeight: 'bold' }}>
                     Onset Date
                   </Table.Cell>
-                  <Table.Cell style={{ fontWeight: "bold" }}>
+                  <Table.Cell style={{ fontWeight: 'bold' }}>
                     Severity
                   </Table.Cell>
                 </Table.Row>
@@ -722,7 +739,7 @@ const Widget = (props) => {
                       <Table.Cell>
                         <Autocomplete
                           id="complaint"
-                          getOptionLabel={(icd10) =>
+                          getOptionLabel={icd10 =>
                             `${icd10.code} ${icd10.desc}`
                           }
                           disablePortal
@@ -730,13 +747,13 @@ const Widget = (props) => {
                           isOptionEqualToValue={(option, value) =>
                             option.code === value.code
                           }
-                          noOptionsText={"No Complaints Available"}
+                          noOptionsText={'No Complaints Available'}
                           renderOption={(props, icd10) => (
                             <Box component="li" {...props} key={icd10.code}>
                               {icd10.code} {icd10.desc}
                             </Box>
                           )}
-                          renderInput={(params) => (
+                          renderInput={params => (
                             <TextField {...params} label="Select complaints" />
                           )}
                           value={inputFields.complaint}
@@ -748,12 +765,12 @@ const Widget = (props) => {
                           }
                         />
 
-                        {errors.complaint != "" ? (
+                        {errors.complaint != '' ? (
                           <span className={classes.error}>
                             {errors.complaint}
                           </span>
                         ) : (
-                          ""
+                          ''
                         )}
                       </Table.Cell>
                       <Table.Cell>
@@ -762,32 +779,32 @@ const Widget = (props) => {
                           id="onsetDate"
                           name="onsetDate"
                           type="date"
-                          min={moment(new Date()).format("YYYY-MM-DD")}
+                          min={moment(new Date()).format('YYYY-MM-DD')}
                           fluid
                           placeholder="Onset Date"
                           value={inputField.onsetDate}
-                          onChange={(event) => handleInputChange(index, event)}
+                          onChange={event => handleInputChange(index, event)}
                         />
 
-                        {errors.onsetDate != "" ? (
+                        {errors.onsetDate != '' ? (
                           <span className={classes.error}>
                             {errors.onsetDate}
                           </span>
                         ) : (
-                          ""
+                          ''
                         )}
                       </Table.Cell>
                       <Table.Cell>
                         <select
                           style={{
                             //border: "1px solid #014d88",
-                            borderRadius: "0px",
-                            fontSize: "14px",
-                            color: "#000",
+                            borderRadius: '0px',
+                            fontSize: '14px',
+                            color: '#000',
                           }}
                           className="ui fluid selection dropdown"
                           value={inputField.severity}
-                          onChange={(event) => handleInputChange(index, event)}
+                          onChange={event => handleInputChange(index, event)}
                           name="severity"
                           id="severity"
                         >
@@ -805,12 +822,12 @@ const Widget = (props) => {
                           <option value="10">10</option>
                         </select>
 
-                        {errors.severity != "" ? (
+                        {errors.severity != '' ? (
                           <span className={classes.error}>
                             {errors.severity}
                           </span>
                         ) : (
-                          ""
+                          ''
                         )}
                       </Table.Cell>
                     </Table.Row>
@@ -828,12 +845,12 @@ const Widget = (props) => {
                       onClick={() => handleAddFields()}
                     >
                       <Icon name="plus" /> Add More
-                    </Button>{" "}
+                    </Button>{' '}
                     <Button
                       color="red"
                       size="tiny"
                       type="button"
-                      onClick={(e) => removeHandleAddFields(e)}
+                      onClick={e => removeHandleAddFields(e)}
                     >
                       <Icon name="minus" /> Remove
                     </Button>
@@ -845,24 +862,24 @@ const Widget = (props) => {
             <Label
               as="a"
               style={{
-                backgroundColor: "#992E62",
-                color: "#fff",
-                width: "100%",
-                height: "35px",
-                fontSize: "16px",
+                backgroundColor: '#992E62',
+                color: '#fff',
+                width: '100%',
+                height: '35px',
+                fontSize: '16px',
               }}
             >
               Clinical Diagnosis
             </Label>
 
-            <Table style={{ color: "#992E62", borderColor: "#992E62" }} celled>
+            <Table style={{ color: '#992E62', borderColor: '#992E62' }} celled>
               <Table.Header>
                 <Table.Row>
-                  <Table.Cell style={{ fontWeight: "bold" }}>
+                  <Table.Cell style={{ fontWeight: 'bold' }}>
                     Condition
                   </Table.Cell>
-                  <Table.Cell style={{ fontWeight: "bold" }}>Order</Table.Cell>
-                  <Table.Cell style={{ fontWeight: "bold" }}>
+                  <Table.Cell style={{ fontWeight: 'bold' }}>Order</Table.Cell>
+                  <Table.Cell style={{ fontWeight: 'bold' }}>
                     Certainty
                   </Table.Cell>
                 </Table.Row>
@@ -875,7 +892,7 @@ const Widget = (props) => {
                       <Table.Cell>
                         <Autocomplete
                           id="diagnosis"
-                          getOptionLabel={(icd10) =>
+                          getOptionLabel={icd10 =>
                             `${icd10.code} ${icd10.desc}`
                           }
                           disablePortal
@@ -883,13 +900,13 @@ const Widget = (props) => {
                           isOptionEqualToValue={(option, value) =>
                             option.code === value.code
                           }
-                          noOptionsText={"No Condition"}
+                          noOptionsText={'No Condition'}
                           renderOption={(props, icd10) => (
                             <Box component="li" {...props} key={icd10.code}>
                               {icd10.code} {icd10.desc}
                             </Box>
                           )}
-                          renderInput={(params) => (
+                          renderInput={params => (
                             <TextField {...params} label="Select conditions" />
                           )}
                           value={inputFieldsDiagnosis.diagnosis}
@@ -901,25 +918,25 @@ const Widget = (props) => {
                           }
                         />
 
-                        {errors.diagnosis != "" ? (
+                        {errors.diagnosis != '' ? (
                           <span className={classes.error}>
                             {errors.diagnosis}
                           </span>
                         ) : (
-                          ""
+                          ''
                         )}
                       </Table.Cell>
                       <Table.Cell>
                         <select
                           style={{
                             //border: "1px solid #014d88",
-                            borderRadius: "0px",
-                            fontSize: "14px",
-                            color: "#000",
+                            borderRadius: '0px',
+                            fontSize: '14px',
+                            color: '#000',
                           }}
                           className="ui fluid selection dropdown"
                           value={diagInputField.diagnosisOrder}
-                          onChange={(event) =>
+                          onChange={event =>
                             handleInputDiagChange(diagIndex, event)
                           }
                           name="diagnosisOrder"
@@ -930,25 +947,25 @@ const Widget = (props) => {
                           <option value="2">Secondary</option>
                         </select>
 
-                        {errors.diagnosisOrder != "" ? (
+                        {errors.diagnosisOrder != '' ? (
                           <span className={classes.error}>
                             {errors.diagnosisOrder}
                           </span>
                         ) : (
-                          ""
+                          ''
                         )}
                       </Table.Cell>
                       <Table.Cell>
                         <select
                           style={{
                             //border: "1px solid #014d88",
-                            borderRadius: "0px",
-                            fontSize: "14px",
-                            color: "#000",
+                            borderRadius: '0px',
+                            fontSize: '14px',
+                            color: '#000',
                           }}
                           className="ui fluid selection dropdown"
                           value={diagInputField.certainty}
-                          onChange={(event) =>
+                          onChange={event =>
                             handleInputDiagChange(diagIndex, event)
                           }
                           name="certainty"
@@ -959,12 +976,12 @@ const Widget = (props) => {
                           <option value="2">Confirmed</option>
                         </select>
 
-                        {errors.certainty != "" ? (
+                        {errors.certainty != '' ? (
                           <span className={classes.error}>
                             {errors.certainty}
                           </span>
                         ) : (
-                          ""
+                          ''
                         )}
                       </Table.Cell>
                       {/*<Table.Cell></Table.Cell>*/}
@@ -977,18 +994,18 @@ const Widget = (props) => {
                 <Table.Row>
                   <Table.HeaderCell>
                     <Button
-                      style={{ backgroundColor: "#992E62", color: "#fff" }}
+                      style={{ backgroundColor: '#992E62', color: '#fff' }}
                       size="tiny"
                       type="button"
                       onClick={() => handleAddDiagFields()}
                     >
                       <Icon name="plus" /> Add More
-                    </Button>{" "}
+                    </Button>{' '}
                     <Button
                       color="red"
                       size="tiny"
                       type="button"
-                      onClick={(e) => removeHandleAddDiagFields(e)}
+                      onClick={e => removeHandleAddDiagFields(e)}
                     >
                       <Icon name="minus" /> Remove
                     </Button>
@@ -1002,7 +1019,7 @@ const Widget = (props) => {
                 <Label
                   as="a"
                   color="teal"
-                  style={{ width: "100%", height: "35px", fontSize: "16px" }}
+                  style={{ width: '100%', height: '35px', fontSize: '16px' }}
                 >
                   Laboratory Test Orders
                 </Label>
@@ -1010,13 +1027,13 @@ const Widget = (props) => {
                 <Table color="teal" celled>
                   <Table.Header>
                     <Table.Row>
-                      <Table.Cell style={{ fontWeight: "bold" }}>
+                      <Table.Cell style={{ fontWeight: 'bold' }}>
                         Lab Test Group
                       </Table.Cell>
-                      <Table.Cell style={{ fontWeight: "bold" }}>
+                      <Table.Cell style={{ fontWeight: 'bold' }}>
                         Lab Test
                       </Table.Cell>
-                      <Table.Cell style={{ fontWeight: "bold" }}>
+                      <Table.Cell style={{ fontWeight: 'bold' }}>
                         Priority
                       </Table.Cell>
                       {/*<Table.Cell style={{ fontWeight: 'bold'}}>Status</Table.Cell>*/}
@@ -1031,22 +1048,20 @@ const Widget = (props) => {
                             <select
                               style={{
                                 //border: "1px solid #014d88",
-                                borderRadius: "0px",
-                                fontSize: "14px",
-                                color: "#000",
+                                borderRadius: '0px',
+                                fontSize: '14px',
+                                color: '#000',
                               }}
                               className="ui fluid selection dropdown"
                               value={labInputField.labOrder}
-                              onChange={(e) =>
-                                handleInputLabChange(labIndex, e)
-                              }
+                              onChange={e => handleInputLabChange(labIndex, e)}
                               name="labOrder"
                               id="labOrder"
                             >
                               <option>Select</option>
                               {labGroups
-                                .filter((e) => e.groupName !== "Others")
-                                .map((d) => (
+                                .filter(e => e.groupName !== 'Others')
+                                .map(d => (
                                   <option
                                     key={d.id}
                                     value={`${d.id}-${d.groupName}`}
@@ -1060,26 +1075,24 @@ const Widget = (props) => {
                             <select
                               style={{
                                 //border: "1px solid #014d88",
-                                borderRadius: "0px",
-                                fontSize: "14px",
-                                color: "#000",
+                                borderRadius: '0px',
+                                fontSize: '14px',
+                                color: '#000',
                               }}
                               className="ui fluid selection dropdown"
                               value={labInputField.labTest}
-                              onChange={(e) =>
-                                handleInputLabChange(labIndex, e)
-                              }
+                              onChange={e => handleInputLabChange(labIndex, e)}
                               name="labTest"
                               id="labTest"
                             >
                               <option>Select</option>
-                              {labInputField.labTest === ""
-                                ? labTests.map((d) => (
+                              {labInputField.labTest === ''
+                                ? labTests.map(d => (
                                     <option key={d.id} value={d.id}>
                                       {d.labTestName}
                                     </option>
                                   ))
-                                : prevTests.map((d) => (
+                                : prevTests.map(d => (
                                     <option key={d.id} value={d.id}>
                                       {d.labTestName}
                                     </option>
@@ -1090,20 +1103,18 @@ const Widget = (props) => {
                             <select
                               style={{
                                 //border: "1px solid #014d88",
-                                borderRadius: "0px",
-                                fontSize: "14px",
-                                color: "#000",
+                                borderRadius: '0px',
+                                fontSize: '14px',
+                                color: '#000',
                               }}
                               className="ui fluid selection dropdown"
                               value={labInputField.priority}
-                              onChange={(e) =>
-                                handleInputLabChange(labIndex, e)
-                              }
+                              onChange={e => handleInputLabChange(labIndex, e)}
                               name="priority"
                               id="priority"
                             >
                               <option>Select</option>
-                              {priorities.map((d) => (
+                              {priorities.map(d => (
                                 <option key={d.id} value={d.id}>
                                   {d.display}
                                 </option>
@@ -1125,12 +1136,12 @@ const Widget = (props) => {
                           onClick={() => handleAddFieldsLab()}
                         >
                           <Icon name="plus" /> Add Test
-                        </Button>{" "}
+                        </Button>{' '}
                         <Button
                           color="red"
                           size="tiny"
                           type="button"
-                          onClick={(e) => removeHandleAddFieldsLab(e)}
+                          onClick={e => removeHandleAddFieldsLab(e)}
                         >
                           <Icon name="minus" /> Remove
                         </Button>
@@ -1144,7 +1155,7 @@ const Widget = (props) => {
             <Label
               as="a"
               color="purple"
-              style={{ width: "100%", height: "35px", fontSize: "16px" }}
+              style={{ width: '100%', height: '35px', fontSize: '16px' }}
             >
               Pharmacy Order
             </Label>
@@ -1155,8 +1166,8 @@ const Widget = (props) => {
                 pharmacyOrder.map((pharmacy, i) => (
                   <div className="page-header" key={i}>
                     <p>
-                      <b>Drug</b> {pharmacy.drugName} <b>Date Ordered:</b>{" "}
-                      {pharmacy.dateTimePrescribed.replace("@", " ")}
+                      <b>Drug</b> {pharmacy.drugName} <b>Date Ordered:</b>{' '}
+                      {pharmacy.dateTimePrescribed.replace('@', ' ')}
                       <Label
                         as="a"
                         color="blue"
@@ -1164,7 +1175,7 @@ const Widget = (props) => {
                         onClick={() => handleEditPharmacyOrder(pharmacy)}
                       >
                         <Icon name="eye" /> View
-                      </Label>{" "}
+                      </Label>{' '}
                       <Label
                         as="a"
                         color="red"
@@ -1183,27 +1194,80 @@ const Widget = (props) => {
             </>
             <br />
             {isPharmacyEnabled && (
-              <div>
+              <div className="mb-3">
                 <ButtonMui
                   variant="contained"
                   color="primary"
                   className="ms-2"
                   onClick={() => handleAddPharmacyOrder()}
                 >
-                  <span style={{ textTransform: "capitalize" }}>
-                    Add Pharmacy Order
+                  <span style={{ textTransform: 'capitalize' }}>
+                    Add Medication Prescription
                   </span>
                 </ButtonMui>
               </div>
             )}
+
+            <Label
+              as="a"
+              color="blue"
+              style={{ width: '100%', height: '35px', fontSize: '16px' }}
+            >
+              Documentation
+            </Label>
+
+            <div className="form-group mb-3 col-md-4">
+              <br />
+              {/* <Label for="ninNumber">Doctor's signature </Label> */}
+              <Table.Cell style={{ fontWeight: 'bold' }}>
+                Doctor's signature
+              </Table.Cell>
+              <input
+                className="form-control"
+                type="text"
+                name="signature"
+                value={signature.name}
+                id="signature"
+                onChange={handleInputChangeBasic}
+                style={{
+                  border: '1px solid #014D88',
+                  borderRadius: '0.2rem',
+                }}
+              />
+            </div>
           </Segment>
-          <Button type={"submit"} variant="contained" color={"primary"}>
-            Submit
-          </Button>
+          {!submitted ? (
+            <Button
+              type={'submit'}
+              variant="contained"
+              color={'primary'}
+              disabled={submitted}
+            >
+              Submit
+            </Button>
+          ) : (
+            ''
+          )}
         </form>
+
+        {submitted ? (
+          <Button
+            style={{
+              backgroundColor: '#014d88',
+              color: '#fff',
+              height: '35px',
+            }}
+            onClick={() => PostPatientService(patientObj)}
+          >
+            Post Patient
+          </Button>
+        ) : (
+          ''
+        )}
       </Grid.Column>
 
       <AddPharmacyOrder
+        encounterDate={encounterDate}
         toggle={toggle}
         patientObj={patientObj}
         showModal={pharmacyModal}
@@ -1213,6 +1277,11 @@ const Widget = (props) => {
         patientObj={patientObj}
         showModal={pharmacyOrderModal}
         editPharmacyOrderValue={editPharmacyOrderValue}
+      />
+      <PostClient
+        toggle={togglePost}
+        showModal={modalPost}
+        patientObj={patientObj}
       />
     </Grid>
   );

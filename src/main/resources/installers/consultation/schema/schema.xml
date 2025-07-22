@@ -19,5 +19,17 @@
                  stripComments="true"/>
     </changeSet>
 
+    <changeSet id="20250722-01" author="victor">
+        <preConditions onFail="MARK_RAN">
+            <!-- Run only if 'signature' column does NOT already exist -->
+            <not>
+                <columnExists tableName="consultation" columnName="signature"/>
+            </not>
+        </preConditions>
+
+        <addColumn tableName="consultation">
+            <column name="signature" type="TEXT"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
 

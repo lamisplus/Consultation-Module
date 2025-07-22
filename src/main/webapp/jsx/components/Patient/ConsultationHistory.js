@@ -22,6 +22,9 @@ import SaveAlt from "@material-ui/icons/SaveAlt";
 import Search from "@material-ui/icons/Search";
 import ViewColumn from "@material-ui/icons/ViewColumn";
 import { Card, CardBody } from "reactstrap";
+import { FaEye } from "react-icons/fa";
+import SplitActionButton from "../../layouts/SplitActionButton";
+import { toast } from "react-toastify";
 
 const tableIcons = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
@@ -47,6 +50,47 @@ const tableIcons = {
   ViewColumn: forwardRef((props, ref) => <ViewColumn {...props} ref={ref} />),
 };
 
+const patientsWithConsultation = (query) =>
+  new Promise((resolve, reject) => {
+    axios
+      .get(`${baseUrl}consultations/search?keyword=${query.search}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response) => response)
+      .then((result) => {
+        resolve({
+          data: result.data.content.map((row) => ({
+            name: row.firstName + " " + row.otherName + " " + row.surname,
+            hospital_number: row.hospitalNumber,
+            patient_id: row.patient_id,
+            Consultation_date: row.encounterDate,
+            actions: <SplitActionButton actions={actionItems(row)} />,
+          })),
+          page: query.page,
+          totalCount: result.data.totalRecords,
+        });
+      });
+  });
+
+const actionItems = (row) => {
+  return [
+    {
+      type: "single",
+      actions: [
+        {
+          name: "Dashboard",
+          type: "link",
+          icon: <FaEye size="22" />,
+          to: {
+            pathname: "/previous-consultation",
+            state: { patientObj: row },
+          },
+        },
+      ],
+    },
+  ];
+};
+
 function ConsultationHistory() {
   return (
     <div>
@@ -54,9 +98,8 @@ function ConsultationHistory() {
         <CardBody>
           <MaterialTable
             icons={tableIcons}
-            title="Find Patient "
+            title="Find patient previous consultations"
             columns={[
-              { title: "Check-In-Date", field: "checkInDate" },
               {
                 title: "Patient Name",
                 field: "name",
@@ -66,11 +109,20 @@ function ConsultationHistory() {
                 field: "hospital_number",
                 filtering: false,
               },
-              { title: "Gender", field: "gender", filtering: false },
-              { title: "Age", field: "age", filtering: false },
+              {
+                title: "Patient Id",
+                field: "patient_id",
+                filtering: false,
+                hidden: true,
+              },
+              {
+                title: "Consultation Date",
+                field: "Consultation_date",
+                filtering: false,
+              },
               { title: "Actions", field: "actions", filtering: false },
             ]}
-            data={[]}
+            data={patientsWithConsultation}
             options={{
               headerStyle: {
                 backgroundColor: "#014d88",

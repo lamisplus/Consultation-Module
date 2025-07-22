@@ -3,6 +3,7 @@ package org.lamisplus.modules.consultation.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lamisplus.modules.consultation.domain.dto.ConsultationDTO;
+import org.lamisplus.modules.consultation.domain.dto.PatientConsultationProjection;
 import org.lamisplus.modules.consultation.domain.entity.Consultation;
 import org.lamisplus.modules.consultation.domain.entity.Diagnosis;
 import org.lamisplus.modules.consultation.domain.entity.PresentingComplaint;
@@ -76,15 +77,22 @@ public class ConsultationService {
     }
 
 
-   public Page<ConsultationDTO> getAllConsultations(int page, int size, String sortBy, String sortDir) {
-        Sort sort = sortDir.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
+//   public Page<ConsultationDTO> getAllConsultations(int page, int size, String sortBy, String sortDir) {
+//        Sort sort = sortDir.equalsIgnoreCase("asc")
+//                ? Sort.by(sortBy).ascending()
+//                : Sort.by(sortBy).descending();
+//
+//        Pageable pageable = PageRequest.of(page, size, sort);
+//        Page<Consultation> consultationPage = repository.findAll(pageable);
+//
+//        return consultationPage.map(mapper::toConsultationDto);
+//    }
 
-        Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Consultation> consultationPage = repository.findAll(pageable);
-
-        return consultationPage.map(mapper::toConsultationDto);
+    public Page<PatientConsultationProjection> searchPatientWithConsultation(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return repository.findByPatientIdWithConsultation(keyword.trim(), pageable);
     }
 
 

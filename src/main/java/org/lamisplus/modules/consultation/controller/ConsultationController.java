@@ -4,8 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lamisplus.modules.consultation.domain.dto.ApiResponse;
 import org.lamisplus.modules.consultation.domain.dto.ConsultationDTO;
+import org.lamisplus.modules.consultation.domain.dto.PatientConsultationProjection;
 import org.lamisplus.modules.consultation.service.ConsultationService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -59,15 +63,26 @@ public class ConsultationController {
 
 
 
-    @GetMapping("")
-    public ResponseEntity<Page<ConsultationDTO>> getAllConsultations(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "encounterDate") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+//    @GetMapping("")
+//    public ResponseEntity<Page<ConsultationDTO>> getAllConsultations(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size,
+//            @RequestParam(defaultValue = "encounterDate") String sortBy,
+//            @RequestParam(defaultValue = "desc") String sortDir) {
+//
+//        return ResponseEntity.ok(
+//                service.getAllConsultations(page, size, sortBy, sortDir)
+//        );
+//    }
 
-        return ResponseEntity.ok(
-                service.getAllConsultations(page, size, sortBy, sortDir)
-        );
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<PatientConsultationProjection>> searchPatients(
+            @RequestParam("keyword") String keyword,
+            @PageableDefault(size = 10, sort = "encounterDate", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<PatientConsultationProjection> results = service.searchPatientWithConsultation(keyword, pageable);
+        return ResponseEntity.ok(results);
     }
+
 }

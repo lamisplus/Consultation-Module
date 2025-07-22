@@ -7,26 +7,14 @@ import org.lamisplus.modules.consultation.domain.entity.Consultation;
 import org.lamisplus.modules.consultation.domain.entity.Diagnosis;
 import org.lamisplus.modules.consultation.domain.entity.PresentingComplaint;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface ConsultationMapper {
     Consultation toConsultation(ConsultationDTO consultationDTO);
-
-    @Mapping(target = "consultation", ignore = true)
     Diagnosis toDiagnosis(DiagnosisDTO diagnosisDTO);
-
-    @Mapping(target = "consultation", ignore = true)
     PresentingComplaint toPresentingComplaint(PresentingComplaintDTO presentingComplaintDTO);
-
-
-//    Diagnosis toDiagnosis(DiagnosisDTO diagnosisDTO);
-//    PresentingComplaint toPresentingComplaint(PresentingComplaintDTO presentingComplaintDTO);
-
-
 
     ConsultationDTO toConsultationDto(Consultation consultation);
     DiagnosisDTO toDiagnosisDto(Diagnosis diagnosis);
@@ -35,18 +23,4 @@ public interface ConsultationMapper {
     List<ConsultationDTO> toConsultationDtoList(List<Consultation> consultationList);
     List<DiagnosisDTO> toDiagnosisDtoList(List<Diagnosis> diagnosisList);
     List<PresentingComplaintDTO> toPresentingComplaintDtoList(List<PresentingComplaint> presentingComplaintList);
-
-    default PresentingComplaint toPresentingComplaintWithConsultation(
-            PresentingComplaintDTO dto, Consultation consultation) {
-        PresentingComplaint entity = toPresentingComplaint(dto);
-        entity.setConsultation(consultation);
-        return entity;
-    }
-
-    default Diagnosis toDiagnosisWithConsultation(
-            DiagnosisDTO dto, Consultation consultation) {
-        Diagnosis entity = toDiagnosis(dto);
-        entity.setConsultation(consultation);
-        return entity;
-    }
 }

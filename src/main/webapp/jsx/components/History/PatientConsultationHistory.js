@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useHistory, Link  } from "react-router-dom";
-import MaterialTable, { MTableToolbar, cellStyle, headerStyle } from 'material-table';
+import { useHistory } from "react-router-dom";
+import MaterialTable from 'material-table';
 import axios from "axios";
 import {token, url as baseUrl} from "../../../api";
 import { forwardRef } from 'react';
-import { Grid,Container, Segment, Label, Icon, List,Button, Feed, Input, Radio } from 'semantic-ui-react';
+import { Grid, Container, Button } from 'semantic-ui-react';
 import 'semantic-ui-css/semantic.min.css';
 import AddBox from '@material-ui/icons/AddBox';
 import ArrowUpward from '@material-ui/icons/ArrowUpward';
@@ -23,16 +23,10 @@ import Search from '@material-ui/icons/Search';
 import ViewColumn from '@material-ui/icons/ViewColumn';
 import 'react-toastify/dist/ReactToastify.css';
 import { makeStyles } from '@material-ui/core/styles'
-import "@reach/menu-button/styles.css";
-import ButtonMui from "@material-ui/core/Button";
-import MatButton from "@material-ui/core/Button";
-import { TiArrowBack } from 'react-icons/ti'
 import { toast } from 'react-toastify';
-import Box from '@mui/material/Box';
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import PatientCardDetail from "../Patient/PatientCard";
-import RecentHistory from "./RecentHistory";
+import PatientCard from "../Patient/PatientCard";
 import PatientConsultationHistoryCard from "./PatientConsulationHistoryCard";
 
 const tableIcons = {
@@ -69,7 +63,7 @@ const useStyles = makeStyles(theme => ({
         alignItems: 'center'
     },
     form: {
-        width: '100%', // Fix IE 11 issue.
+        width: '100%',
         marginTop: theme.spacing(3)
     },
     submit: {
@@ -112,7 +106,7 @@ const PatientConsultationHistory = (props) => {
   const [selectedVisit, setSelectedVisit] = useState();
   const [labTests, setLabTests] = useState([]);
 
-  ///GET LIST OF Patients
+  // GET LIST OF Patient Consultations
   const patientConsultations = useCallback(async () => {
     try {
       const response = await axios.get(
@@ -124,13 +118,11 @@ const PatientConsultationHistory = (props) => {
         setSelectedVisit(response.data[0]);
       }
     } catch (e) {
-      toast.error("An error occured while fetching consultation !", {
-        position: toast.POSITION.TOP_RIGHT,
+      toast.error("An error occurred while fetching consultation!", {
+        position: toast.POSITION.TOP_CENTER,
       });
     }
-  }, []);
-
- 
+  }, [patientObj.id]);
 
   const loadPatientTests = useCallback(async () => {
     try {
@@ -143,54 +135,31 @@ const PatientConsultationHistory = (props) => {
         setLabTests(response.data);
       }
     } catch (e) {
-      toast.error("An error occured while fetching consultation !", {
-        position: toast.POSITION.TOP_RIGHT,
+      toast.error("An error occurred while fetching lab tests!", {
+        position: toast.POSITION.TOP_CENTER,
       });
     }
-  }, []);
+  }, [patientObj.visitId]);
 
   useEffect(() => {
     patientConsultations();
     loadPatientTests();
-  }, []);
+  }, [patientConsultations, loadPatientTests]);
 
-  const formatDiagnosis = (diagnosisList) => {
-    return diagnosisList.map((obj) => obj.diagnosis) + " ,";
-  };
-  const formatPresentingComplaints = (presentingComplaintsList) => {
-    return presentingComplaintsList.map((obj) => obj.complaint) + " ,";
-  };
   const loadConsultationDetails = (row) => {
     setSelectedVisit(row);
-    //console.log(row);
   };
+
   return (
-    <Container style={{ width: "100%" }}>
+    <Container style={{ width: "100%", minHeight: "100vh" }}>
       <br />
+      
+      {/* Use PatientCard component with Post and Checkout buttons and validation */}
+      <PatientCard patientObj={patientObj} />
+      
       <br />
-      <Link
-        to={{
-          pathname: "/patient-history",
-          state: { patientObj: patientObj },
-        }}
-      >
-        <Button floated="right" style={{ padding: "0px" }}>
-          <MatButton
-            variant="contained"
-            floated="right"
-            startIcon={<TiArrowBack />}
-            style={{
-              backgroundColor: "rgb(153, 46, 98)",
-              color: "#fff",
-              height: "35px",
-            }}
-          >
-            <span style={{ textTransform: "capitalize" }}>Back</span>
-          </MatButton>
-        </Button>
-      </Link>
-      <br />
-      <br />
+      
+      <div style={{ marginTop: '20px' }}>
 
       <Card>
         <CardContent>
@@ -198,17 +167,11 @@ const PatientConsultationHistory = (props) => {
             <Grid.Column width={4} style={{ padding: "5px" }} item>
               <MaterialTable
                 icons={tableIcons}
-                /*title="Patient Consultations"*/
                 title=""
                 columns={[
-                  // { title: " ID", field: "Id" },
                   {
                     title: "Consultation Visits",
                     field: "date",
-                    /*                                           cellStyle: {
-                                                                                       backgroundColor: '#039be5',
-                                                                                       color: '#FFF'
-                                                                                   },*/
                     cellStyle: {
                       padding: "10px 5px",
                     },
@@ -216,13 +179,8 @@ const PatientConsultationHistory = (props) => {
                       backgroundColor: "#014d88",
                     },
                   },
-                  /*                                        { title: "Visit Notes", field: "visitNotes", filtering: false },
-                                                                            { title: "Diagnosis List", field: "diagnosisList", filtering: false },
-                                                                            { title: "Presenting Complaints", field: "presentingComplaints", filtering: false },
-                                                                            { title: "Actions", field: "actions", filtering: false },*/
                 ]}
                 data={patientList.map((row) => ({
-                  //Id: manager.id,
                   date: (
                     <div>
                       <Button
@@ -261,7 +219,6 @@ const PatientConsultationHistory = (props) => {
                   search: false,
                   filtering: false,
                   exportButton: false,
-                  /*searchFieldAlignment: 'left',*/
                   pageSizeOptions: [10, 20, 100],
                   pageSize: 10,
                   debounceInterval: 400,
@@ -283,70 +240,7 @@ const PatientConsultationHistory = (props) => {
           </Grid>
         </CardContent>
       </Card>
-
-      {/*                        <MaterialTable
-                            icons={tableIcons}
-                            title="Patient Consultationsz"
-                            columns={[
-                                // { title: " ID", field: "Id" },
-                                {
-                                  title: "Encounter Date", field: "date",
-                                    cellStyle: {
-                                          backgroundColor: '#039be5',
-                                          color: '#FFF'
-                                        },
-                                        headerStyle: {
-                                          backgroundColor: '#039be5',
-                                        }
-                                },
-                                { title: "Visit Notes", field: "visitNotes", filtering: false },
-                                { title: "Diagnosis List", field: "diagnosisList", filtering: false },
-                                { title: "Presenting Complaints", field: "presentingComplaints", filtering: false },
-                                { title: "Actions", field: "actions", filtering: false },
-                            ]}
-                            data={ patientList.map((row) => ({
-                                //Id: manager.id,
-                                date:row.encounterDate,
-                                visitNotes:row.visitNotes,
-                                diagnosisList:formatDiagnosis(row.diagnosisList),
-                                presentingComplaints:formatPresentingComplaints(row.presentingComplaints),
-                                actions:
-                                    <div>
-                                        <Link
-                                            to={{
-                                                pathname: "/patient-consultation",
-                                                state: { patientObj: row  }
-                                            }}>
-                                             <Button
-                                                icon
-                                                inverted
-                                                color='blue'
-                                                className=" float-end ms-2"
-                                             >
-                                             <Icon name='eye' />
-                                            </Button>
-                                        </Link>
-                                    </div>
-
-                            }))}
-
-                            options={{
-                                headerStyle: {
-                                    backgroundColor: "#01579b",
-                                    color: "#ccc",
-                                },
-                                searchFieldStyle: {
-                                    width : '200%',
-                                    margingLeft: '250px',
-                                },
-                                filtering: false,
-                                exportButton: false,
-                                searchFieldAlignment: 'left',
-                                pageSizeOptions:[10,20,100],
-                                pageSize:10,
-                                debounceInterval: 400
-                            }}
-                        />*/}
+      </div>
     </Container>
   );
 };

@@ -10,6 +10,7 @@ import { url as baseUrl, token } from "../../../api";
 import { useHistory } from "react-router-dom";
 import MatButton from "@material-ui/core/Button";
 import SaveIcon from "@material-ui/icons/Save";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 import { format } from "date-fns";
 import "react-dual-listbox/lib/react-dual-listbox.css";
 
@@ -65,6 +66,8 @@ const PostClient = (props) => {
   const classes = useStyles();
   const [services, setServices] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
   const [errors, setErrors] = useState({});
   const [postServices, setPostServices] = useState({
     encounterDate: format(new Date(newDate), "yyyy-MM-dd"),
@@ -100,19 +103,21 @@ const PostClient = (props) => {
     ServicesPost();
   }, []);
 
+  // Post patient to services only 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (selectedOption.length > 0) {
       setSaving(true);
 
       try {
-        await axios.put(
-          `${baseUrl}patient/visit/checkout/${patientObj.visitId}`,
-          patientObj.visitId,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+     
+        // await axios.put(
+        //   `${baseUrl}patient/visit/checkout/${patientObj.visitId}`,
+        //   patientObj.visitId,
+        //   {
+        //     headers: { Authorization: `Bearer ${token}` },
+        //   }
+        // );
 
         let serviceArr = [];
         selectedOption.forEach(function (value, index, array) {
@@ -133,21 +138,53 @@ const PostClient = (props) => {
 
         setSaving(false);
         props.patientObj.commenced = true;
-        toast.success("Patient checked out and posted successfully.");
+        toast.success("Patient posted to services successfully.");
         props.toggle();
-        history.push("/");
+        // Don't redirect to home - let clinician decide next action
+        // history.push("/");
       } catch (error) {
         setSaving(false);
         console.error(error);
-        toast.error("Something went wrong during checkout or posting");
+        toast.error("Something went wrong during posting");
       }
     } else {
       toast.error("Kindly select a service to post the patient");
     }
   };
 
+  // New function for checkout only (without posting to services)
+  const handleCheckoutOnly = async () => {
+    setCheckingOut(true);
+
+    try {
+      await axios.put(
+        `${baseUrl}patient/visit/checkout/${patientObj.visitId}`,
+        patientObj.visitId,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setCheckingOut(false);
+      setShowCheckoutConfirm(false);
+      props.patientObj.checkedOut = true;
+      toast.success("Patient checked out successfully.");
+      props.toggle();
+      history.push("/");
+    } catch (error) {
+      setCheckingOut(false);
+      console.error("Checkout error:", error);
+      toast.error("Something went wrong during checkout. Please try again.");
+    }
+  };
+
+  const toggleCheckoutConfirm = () => {
+    setShowCheckoutConfirm(!showCheckoutConfirm);
+  };
+
   return (
     <div>
+      {/* Main Post Patient Modal */}
       <Modal
         show={props.showModal}
         toggle={props.toggle}
@@ -171,7 +208,7 @@ const PostClient = (props) => {
                 color: "#992E62",
               }}
             >
-              Post Patient
+              Post Patient to Services
             </h5>
           </Label>
           <Button
@@ -193,27 +230,125 @@ const PostClient = (props) => {
                 </div>
                 {saving ? <Spinner /> : ""}
                 <br />
-                <MatButton
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  className={classes.button}
-                  startIcon={<SaveIcon />}
-                  onClick={handleSubmit}
-                  style={{ backgroundColor: "#014d88" }}
+
+                {/* Action Buttons */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    justifyContent: "center",
+                  }}
                 >
-                  {!saving ? (
-                    <span style={{ textTransform: "capitalize" }}>Save</span>
-                  ) : (
+                  {/* Post Patient Button - Only posts to services, no checkout */}
+                  <MatButton
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    className={classes.button}
+                    startIcon={<SaveIcon />}
+                    onClick={handleSubmit}
+                    disabled={saving || checkingOut}
+                    style={{ backgroundColor: "#014d88" }}
+                  >
+                    {!saving ? (
+                      <span style={{ textTransform: "capitalize" }}>
+                        Post to Services
+                      </span>
+                    ) : (
+                      <span style={{ textTransform: "capitalize" }}>
+                        Posting...
+                      </span>
+                    )}
+                  </MatButton>
+
+                  {/* Checkout Only Button */}
+                  <MatButton
+                    variant="contained"
+                    className={classes.button}
+                    startIcon={<ExitToAppIcon />}
+                    onClick={toggleCheckoutConfirm}
+                    disabled={saving || checkingOut}
+                    style={{
+                      backgroundColor: "#208001",
+                      color: "#fff",
+                    }}
+                  >
                     <span style={{ textTransform: "capitalize" }}>
-                      Saving...
+                      Checkout Only
                     </span>
-                  )}
-                </MatButton>
+                  </MatButton>
+                </div>
               </form>
             </CardBody>
           </Card>
         </Modal.Body>
+      </Modal>
+
+      {/* Checkout Confirmation Modal */}
+      <Modal
+        show={showCheckoutConfirm}
+        onHide={toggleCheckoutConfirm}
+        className="fade"
+        size="md"
+      >
+        <Modal.Header style={{ backgroundColor: "#fff" }}>
+          <Modal.Title style={{ color: "#992E62", fontWeight: "bold" }}>
+            Confirm Patient Checkout
+          </Modal.Title>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={toggleCheckoutConfirm}
+            aria-label="Close"
+          ></button>
+        </Modal.Header>
+        <Modal.Body>
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <p style={{ fontSize: "16px", marginBottom: "20px" }}>
+              Are you sure you want to checkout{" "}
+              <strong style={{ color: "#0B72AA" }}>
+                {patientObj.fullname}
+              </strong>{" "}
+              (Hospital No: <strong>{patientObj.hospitalNumber}</strong>)
+              without posting to any services?
+            </p>
+            <p style={{ fontSize: "14px", color: "#666" }}>
+              This action will end the current visit for this patient without
+              posting them to any additional services.
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer style={{ justifyContent: "center" }}>
+          <MatButton
+            variant="outlined"
+            onClick={toggleCheckoutConfirm}
+            style={{
+              marginRight: "10px",
+              borderColor: "#6c757d",
+              color: "#6c757d",
+            }}
+          >
+            Cancel
+          </MatButton>
+          <MatButton
+            variant="contained"
+            onClick={handleCheckoutOnly}
+            disabled={checkingOut}
+            style={{
+              backgroundColor: "#208001",
+              color: "#fff",
+            }}
+          >
+            {checkingOut ? (
+              <>
+                <Spinner size="sm" style={{ marginRight: "8px" }} />
+                Checking Out...
+              </>
+            ) : (
+              "Confirm Checkout"
+            )}
+          </MatButton>
+        </Modal.Footer>
       </Modal>
     </div>
   );

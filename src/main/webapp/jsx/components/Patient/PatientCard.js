@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import { withStyles } from '@material-ui/core/styles';
-import classNames from 'classnames';
-import ExpansionPanel from '@material-ui/core/ExpansionPanel';
-import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
-import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
-import ExpansionPanelActions from '@material-ui/core/ExpansionPanelActions';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import Divider from '@material-ui/core/Divider';
-import { Button } from 'semantic-ui-react';
-import { Label } from 'semantic-ui-react';
-import 'semantic-ui-css/semantic.min.css';
-import { Col, Row } from 'reactstrap';
+import React, { useState, useEffect, useCallback } from "react";
+import PropTypes from "prop-types";
+import { withStyles } from "@material-ui/core/styles";
+import classNames from "classnames";
+import ExpansionPanel from "@material-ui/core/ExpansionPanel";
+import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails";
+import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
+import ExpansionPanelActions from "@material-ui/core/ExpansionPanelActions";
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import Divider from "@material-ui/core/Divider";
+import { Button } from "semantic-ui-react";
+import { Label } from "semantic-ui-react";
+import "semantic-ui-css/semantic.min.css";
+import { Col, Row } from "reactstrap";
+import { Modal } from "react-bootstrap";
+import { Spinner } from "reactstrap";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { token, url as baseUrl } from "../../../api";
+import { useHistory } from "react-router-dom";
 
 import moment from 'moment';
 import PostPatient from './PostPatient';
@@ -59,12 +65,37 @@ const styles = theme => ({
 function PatientCard(props) {
   const { classes } = props;
   const patientObjs = props.patientObj ? props.patientObj : {};
-  //console.log(patientObjs)
   const [patientObj, setpatientObj] = useState(patientObjs);
   const [modal, setModal] = useState(false);
-  const toggle = () => setModal(!modal);
+  const [checkoutModal, setCheckoutModal] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [hasConsultationHistory, setHasConsultationHistory] = useState(false);
+  const history = useHistory();
 
-  const calculate_age = dobInput => {
+  const toggle = () => setModal(!modal);
+  const toggleCheckout = () => setCheckoutModal(!checkoutModal);
+
+  // Check if patient has consultation history for validation
+  const checkConsultationHistory = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${baseUrl}consultations/consultations-by-patient-id/${patientObj.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setHasConsultationHistory(response.data.length > 0);
+    } catch (e) {
+      console.error("Error checking consultation history:", e);
+      setHasConsultationHistory(false);
+    }
+  }, [patientObj.id]);
+
+  useEffect(() => {
+    if (patientObj.id) {
+      checkConsultationHistory();
+    }
+  }, [patientObj.id, checkConsultationHistory]);
+
+  const calculate_age = (dobInput) => {
     const dob = new Date(dobInput);
     const today = new Date();
 
@@ -105,8 +136,41 @@ function PatientCard(props) {
     setModal(!modal);
   };
 
+  const handleCheckoutPatient = async () => {
+    setCheckingOut(true);
+
+    try {
+      await axios.put(
+        `${baseUrl}patient/visit/checkout/${patientObj.visitId}`,
+        patientObj.visitId,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setCheckingOut(false);
+      setCheckoutModal(false);
+
+      setpatientObj({ ...patientObj, checkedOut: true });
+
+      toast.success("Patient checked out successfully.", {
+        position: toast.POSITION.TOP_RIGHT,
+      });
+      history.push("/");
+    } catch (error) {
+      setCheckingOut(false);
+      console.error("Checkout error:", error);
+      toast.error("Something went wrong during checkout. Please try again.", {
+        position: toast.POSITION.TOP_CENTER,
+      });
+    }
+  };
+
   return (
-    <div className={classes.root}>
+    <div
+      className={classes.root}
+      // style={{ position: "sticky", top: "10px", zIndex: 1000 }}
+    >
       <ExpansionPanel defaultExpanded>
         <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
           <Row>
@@ -198,41 +262,122 @@ function PatientCard(props) {
         </ExpansionPanelSummary>
         <Divider />
         <ExpansionPanelActions expandIcon={<ExpandMoreIcon />}>
-          <div className="float-end" style={{ floated: 'right' }}>
-            {' '}
-            <Link to={'/'}>
-              <Button floated="right" style={{ padding: '0px' }}>
-                <MatButton
-                  variant="contained"
-                  floated="right"
-                  startIcon={<TiArrowBack />}
-                  style={{
-                    backgroundColor: 'rgb(153, 46, 98)',
-                    color: '#fff',
-                    height: '35px',
-                  }}
-                >
-                  <span style={{ textTransform: 'capitalize' }}>Back</span>
-                </MatButton>
+          <div className="float-end" style={{ floated: "right" }}>
+            {" "}
+            <Button floated="right" style={{ padding: "0px" }}>
+              <MatButton
+                variant="contained"
+                floated="right"
+                startIcon={<TiArrowBack />}
+                onClick={() => history.goBack()}
+                style={{
+                  backgroundColor: "rgb(153, 46, 98)",
+                  color: "#fff",
+                  height: "35px",
+                }}
+              >
+                <span style={{ textTransform: "capitalize" }}>Back</span>
+              </MatButton>
+            </Button>{" "}
+            {/* Post Patient Button - Only shows if patient has consultation history */}
+            {hasConsultationHistory && (
+              <Button
+                floated="right"
+                style={{
+                  backgroundColor: "#014d88",
+                  color: "#fff",
+                  height: "35px",
+                  marginLeft: "10px",
+                }}
+                onClick={() => PostPatientService(patientObj)}
+              >
+                Post Patient to Services
               </Button>
-            </Link>{' '}
-            {/* <Button
+            )}
+            {/* Checkout Button - Always available (no validation) */}
+            <Button
               floated="right"
               style={{
-                backgroundColor: "#014d88",
+                backgroundColor: "#208001",
                 color: "#fff",
                 height: "35px",
+                marginLeft: "10px",
               }}
-              onClick={() => PostPatientService(patientObj)}
+              onClick={toggleCheckout}
             >
-              Post Patient
-            </Button> */}
+              Checkout Patient
+            </Button>
           </div>
         </ExpansionPanelActions>
       </ExpansionPanel>
 
-      {/* <PostPatient toggle={toggle} showModal={modal} patientObj={patientObj} /> */}
-      {/* <PostClient toggle={toggle} showModal={modal} patientObj={patientObj} /> */}
+      {/* Post Patient Modal */}
+      <PostClient toggle={toggle} showModal={modal} patientObj={patientObj} />
+
+      {/* Checkout Confirmation Modal */}
+      <Modal
+        show={checkoutModal}
+        onHide={toggleCheckout}
+        className="fade"
+        size="md"
+      >
+        <Modal.Header style={{ backgroundColor: "#fff" }}>
+          <Modal.Title style={{ color: "#992E62", fontWeight: "bold" }}>
+            Confirm Patient Checkout
+          </Modal.Title>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={toggleCheckout}
+            aria-label="Close"
+          ></button>
+        </Modal.Header>
+        <Modal.Body>
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <p style={{ fontSize: "16px", marginBottom: "20px" }}>
+              Are you sure you want to checkout{" "}
+              <strong style={{ color: "#0B72AA" }}>
+                {patientObj.surname}, {patientObj.firstName}
+              </strong>{" "}
+              (Hospital No: <strong>{getHospitalNumber(patientObj)}</strong>)?
+            </p>
+            <p style={{ fontSize: "14px", color: "#666" }}>
+              This action will end the current visit for this patient.
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer style={{ justifyContent: "center" }}>
+          <MatButton
+            variant="outlined"
+            onClick={toggleCheckout}
+            style={{
+              marginRight: "10px",
+              borderColor: "#6c757d",
+              color: "#6c757d",
+            }}
+          >
+            Cancel
+          </MatButton>
+          <MatButton
+            variant="contained"
+            onClick={handleCheckoutPatient}
+            disabled={checkingOut}
+            style={{
+              backgroundColor: "#208001",
+              color: "#fff",
+            }}
+          >
+            {checkingOut ? (
+              <>
+                <Spinner size="sm" style={{ marginRight: "8px" }} />
+                Checking Out...
+              </>
+            ) : (
+              "Confirm Checkout"
+            )}
+          </MatButton>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

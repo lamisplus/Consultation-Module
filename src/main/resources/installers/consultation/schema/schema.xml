@@ -7,6 +7,7 @@
     <property name="autoIncrement" value="true"/>
 
     <changeSet id="202206010000000-0002" author="kennedy">
+        <validCheckSum>8:b2c350766e9c13d6fb936721e092e20f</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
                 SELECT count(*) FROM information_schema.tables WHERE table_name = 'consultation';

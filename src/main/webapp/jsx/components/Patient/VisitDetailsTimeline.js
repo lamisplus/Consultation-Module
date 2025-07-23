@@ -1,7 +1,7 @@
-import React from "react";
-import "../../../css/timeline.css";
-const getStatus = (visit) => {
-  return "Completed";
+import React from 'react';
+import '../../../css/timeline.css';
+const getStatus = visit => {
+  return 'Completed';
 };
 
 const VisitDetailsTimeline = ({ visit }) => {
@@ -13,7 +13,7 @@ const VisitDetailsTimeline = ({ visit }) => {
           <h6 className="mb-0">
             Visit Notes <br />
             <strong className="text-primary">
-              <span>{visit?.visits[0]?.visitNotes}</span>
+              <span>{visit?.visitNotes}</span>
             </strong>
           </h6>
         </span>
@@ -24,15 +24,15 @@ const VisitDetailsTimeline = ({ visit }) => {
         <span className="timeline-panel text-muted card-bg-two">
           <h6 className="mb-0">
             Presenting Complaints <br />
-            {visit?.visits[0]?.presentingComplaints &&
-            visit?.visits[0]?.presentingComplaints.length > 0 ? (
-              visit?.visits[0]?.presentingComplaints.map((complaint) => (
+            {visit?.presentingComplaints &&
+            visit?.presentingComplaints.length > 0 ? (
+              visit?.presentingComplaints.map(complaint => (
                 <div key={complaint.id}>
                   <strong className="text-primary">
                     {complaint.complaint}
                   </strong>
                   <div>
-                    Onset: {complaint.onsetDate} | Severity:{" "}
+                    Onset: {complaint.onsetDate} | Severity:{' '}
                     {complaint.severity}
                   </div>
                   {complaint.dateResolved && (
@@ -52,9 +52,8 @@ const VisitDetailsTimeline = ({ visit }) => {
         <span className="timeline-panel text-muted card-bg-three">
           <h6 className="mb-0">
             Diagnosis List <br />
-            {visit?.visits[0]?.diagnosisList &&
-            visit?.visits[0]?.diagnosisList.length > 0 ? (
-              visit?.visits[0]?.diagnosisList.map((diag) => (
+            {visit?.diagnosisList && visit?.diagnosisList.length > 0 ? (
+              visit?.diagnosisList.map(diag => (
                 <div key={diag.id}>
                   <strong className="text-primary">{diag.diagnosis}</strong>
                   <div>

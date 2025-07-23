@@ -19,16 +19,17 @@ import { toast } from "react-toastify";
 import { token, url as baseUrl } from "../../../api";
 import { useHistory } from "react-router-dom";
 
-import moment from "moment";
-import PostPatient from "./PostPatient";
-import PostClient from "./PostClient";
-import { Link } from "react-router-dom";
-import MatButton from "@material-ui/core/Button";
-import { TiArrowBack } from "react-icons/ti";
+import moment from 'moment';
+import PostPatient from './PostPatient';
+import PostClient from './PostClient';
+import { Link } from 'react-router-dom';
+import MatButton from '@material-ui/core/Button';
+import { TiArrowBack } from 'react-icons/ti';
 
-const styles = (theme) => ({
+const styles = theme => ({
   root: {
-    width: "100%",
+    width: '100%',
+    marginBottom: '1em',
   },
   heading: {
     fontSize: theme.typography.pxToRem(15),
@@ -38,15 +39,15 @@ const styles = (theme) => ({
     color: theme.palette.text.secondary,
   },
   icon: {
-    verticalAlign: "bottom",
+    verticalAlign: 'bottom',
     height: 20,
     width: 20,
   },
   details: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   column: {
-    flexBasis: "20.33%",
+    flexBasis: '20.33%',
   },
   helper: {
     borderLeft: `2px solid ${theme.palette.divider}`,
@@ -54,9 +55,9 @@ const styles = (theme) => ({
   },
   link: {
     color: theme.palette.primary.main,
-    textDecoration: "none",
-    "&:hover": {
-      textDecoration: "underline",
+    textDecoration: 'none',
+    '&:hover': {
+      textDecoration: 'underline',
     },
   },
 });
@@ -112,25 +113,25 @@ function PatientCard(props) {
     }
 
     if (years < 1) {
-      return `${months} month${months !== 1 ? "s" : ""}`;
+      return `${months} month${months !== 1 ? 's' : ''}`;
     } else {
-      return `${years} year${years !== 1 ? "s" : ""}`;
+      return `${years} year${years !== 1 ? 's' : ''}`;
     }
   };
 
-  const getHospitalNumber = (patientObj) => {
-    return patientObj.hospitalNumber || "";
+  const getHospitalNumber = patientObj => {
+    return patientObj.hospitalNumber || '';
   };
 
-  const getPhoneNumber = (patientObj) => {
-    return patientObj.phoneNumber || "";
+  const getPhoneNumber = patientObj => {
+    return patientObj.phoneNumber || '';
   };
 
-  const getAddress = (patientObj) => {
-    return patientObj.address || "";
+  const getAddress = patientObj => {
+    return patientObj.address || '';
   };
 
-  const PostPatientService = (row) => {
+  const PostPatientService = row => {
     setpatientObj({ ...patientObj, ...row });
     setModal(!modal);
   };
@@ -174,25 +175,25 @@ function PatientCard(props) {
         <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
           <Row>
             <Col md={11}>
-              <Row className={"mt-1"}>
+              <Row className={'mt-1'}>
                 <Col md={12} className={classes.root2}>
-                  <b style={{ fontSize: "25px", color: "rgb(153, 46, 98)" }}>
+                  <b style={{ fontSize: '25px', color: 'rgb(153, 46, 98)' }}>
                     {patientObj.surname +
-                      ", " +
+                      ', ' +
                       patientObj.firstName +
-                      " " +
+                      ' ' +
                       patientObj.otherName}
                   </b>
                 </Col>
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: "10px" }}
+                  style={{ marginTop: '10px' }}
                 >
                   <span>
-                    {" "}
-                    Hospital Number :{" "}
-                    <b style={{ color: "#0B72AA" }}>
+                    {' '}
+                    Hospital Number :{' '}
+                    <b style={{ color: '#0B72AA' }}>
                       {getHospitalNumber(patientObj)}
                     </b>
                   </span>
@@ -201,45 +202,45 @@ function PatientCard(props) {
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: "10px" }}
+                  style={{ marginTop: '10px' }}
                 >
                   <span>
-                    Date Of Birth :{" "}
-                    <b style={{ color: "#0B72AA" }}>
-                      {patientObj.dateOfBirth || patientObj.dateofbirth}{" "}
+                    Date Of Birth :{' '}
+                    <b style={{ color: '#0B72AA' }}>
+                      {patientObj.dateOfBirth || patientObj.dateofbirth}{' '}
                     </b>
                   </span>
                 </Col>
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: "10px" }}
+                  style={{ marginTop: '10px' }}
                 >
                   <span>
-                    {" "}
-                    Age :{" "}
-                    <b style={{ color: "#0B72AA" }}>
+                    {' '}
+                    Age :{' '}
+                    <b style={{ color: '#0B72AA' }}>
                       {calculate_age(
                         patientObj.dateOfBirth || patientObj.dateofbirth
                       )}
                     </b>
                   </span>
                 </Col>
-                <Col md={4} style={{ marginTop: "10px" }}>
+                <Col md={4} style={{ marginTop: '10px' }}>
                   <span>
-                    {" "}
-                    Sex : <b style={{ color: "#0B72AA" }}>{patientObj.sex}</b>
+                    {' '}
+                    Sex : <b style={{ color: '#0B72AA' }}>{patientObj.sex}</b>
                   </span>
                 </Col>
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: "10px" }}
+                  style={{ marginTop: '10px' }}
                 >
                   <span>
-                    {" "}
-                    Phone Number :{" "}
-                    <b style={{ color: "#0B72AA" }}>
+                    {' '}
+                    Phone Number :{' '}
+                    <b style={{ color: '#0B72AA' }}>
                       {getPhoneNumber(patientObj)}
                     </b>
                   </span>
@@ -247,12 +248,12 @@ function PatientCard(props) {
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: "10px" }}
+                  style={{ marginTop: '10px' }}
                 >
                   <span>
-                    {" "}
-                    Address :{" "}
-                    <b style={{ color: "#0B72AA" }}>{getAddress(patientObj)}</b>
+                    {' '}
+                    Address :{' '}
+                    <b style={{ color: '#0B72AA' }}>{getAddress(patientObj)}</b>
                   </span>
                 </Col>
               </Row>

@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useHistory, Link  } from "react-router-dom";
-import MaterialTable, { MTableToolbar, cellStyle, headerStyle } from 'material-table';
+import { useHistory } from "react-router-dom";
+import MaterialTable from 'material-table';
 import axios from "axios";
 import {token, url as baseUrl} from "../../../api";
 import { forwardRef } from 'react';
-import { Grid,Container, Segment, Label, Icon, List,Button, Feed, Input, Radio } from 'semantic-ui-react';
+import { Grid, Container, Button } from 'semantic-ui-react';
 import 'semantic-ui-css/semantic.min.css';
 import AddBox from '@material-ui/icons/AddBox';
 import ArrowUpward from '@material-ui/icons/ArrowUpward';
@@ -23,16 +23,10 @@ import Search from '@material-ui/icons/Search';
 import ViewColumn from '@material-ui/icons/ViewColumn';
 import 'react-toastify/dist/ReactToastify.css';
 import { makeStyles } from '@material-ui/core/styles'
-import "@reach/menu-button/styles.css";
-import ButtonMui from "@material-ui/core/Button";
-import MatButton from "@material-ui/core/Button";
-import { TiArrowBack } from 'react-icons/ti'
 import { toast } from 'react-toastify';
-import Box from '@mui/material/Box';
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import PatientCardDetail from "../Patient/PatientCard";
-import RecentHistory from "./RecentHistory";
+import PatientCard from "../Patient/PatientCard";
 import PatientConsultationHistoryCard from "./PatientConsulationHistoryCard";
 
 const tableIcons = {
@@ -69,7 +63,7 @@ const useStyles = makeStyles(theme => ({
         alignItems: 'center'
     },
     form: {
-        width: '100%', // Fix IE 11 issue.
+        width: '100%',
         marginTop: theme.spacing(3)
     },
     submit: {
@@ -102,233 +96,153 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const PatientConsultationHistory = (props) => {
-    const classes =useStyles();
-    let history = useHistory();
-    const [patientList, setPatientList] = useState([]);
-    const patientObj = history.location && history.location.state ? history.location.state.patientObj : {};
-    const[selectedVisit,setSelectedVisit] = useState();
-    const[labTests,setLabTests] = useState([]);
+  const classes = useStyles();
+  let history = useHistory();
+  const [patientList, setPatientList] = useState([]);
+  const patientObj =
+    history.location && history.location.state
+      ? history.location.state.patientObj
+      : {};
+  const [selectedVisit, setSelectedVisit] = useState();
+  const [labTests, setLabTests] = useState([]);
 
-    ///GET LIST OF Patients
-    const patientConsultations = useCallback(async () => {
-        try {
-            const response = await axios.get(`${baseUrl}consultations/consultations-by-patient-id/${patientObj.id}`, {headers: {"Authorization": `Bearer ${token}`}});
-            setPatientList(response.data);
-            if(response.data.length > 0 ){
-                setSelectedVisit(response.data[0]);
-            }
-        } catch (e) {
-            toast.error("An error occured while fetching consultation !", {
-                position: toast.POSITION.TOP_RIGHT
-            });
-        }
-
-    }, []);
-
-
-    const loadPatientTests = useCallback(async () => {
-         try {
-             const response = await axios.get(`${baseUrl}laboratory/orders/visits/${patientObj.id}`,
-                         { headers: {"Authorization" : `Bearer ${token}`}});
-
-             if(response.data.length > 0 ){
-                 setLabTests(response.data);
-             }
-         } catch (e) {
-             toast.error("An error occured while fetching consultation !", {
-                 position: toast.POSITION.TOP_RIGHT
-             });
-         }
-
-     }, []);
-
-    useEffect(() => {
-        patientConsultations()
-        loadPatientTests()
-    }, []);
-
-    const formatDiagnosis = diagnosisList => {
-        return diagnosisList.map(obj => obj.diagnosis) + " ,";
-    };
-    const formatPresentingComplaints = presentingComplaintsList => {
-        return presentingComplaintsList.map(obj => obj.complaint) + " ,";
-    };
-    const loadConsultationDetails = (row)=>{
-        setSelectedVisit(row);
-        //console.log(row);
+  // GET LIST OF Patient Consultations
+  const patientConsultations = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${baseUrl}consultations/consultations-by-patient-id/${patientObj.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setPatientList(response.data);
+      if (response.data.length > 0) {
+        setSelectedVisit(response.data[0]);
+      }
+    } catch (e) {
+      toast.error("An error occurred while fetching consultation!", {
+        position: toast.POSITION.TOP_CENTER,
+      });
     }
-    return (
-        <Container style={{width:'100%'}}>
-            <br/><br/>
-            <Link to={{
-                pathname: "/patient-history",
-                state: { patientObj: patientObj  }
-            }} >
-                <Button
-                    floated='right'
-                    style={{padding:'0px'}}
-                >
-                    <MatButton
-                        variant="contained"
-                        floated='right'
-                        startIcon={<TiArrowBack  />}
-                        style={{backgroundColor:"rgb(153, 46, 98)", color:'#fff', height:'35px'}}
-                    >
-                        <span style={{ textTransform: "capitalize" }}>Back</span>
-                    </MatButton>
-                </Button>
-            </Link>
-            <br/><br/>
+  }, [patientObj.id]);
 
-            <Card >
-                <CardContent>
-                    <Grid  columns='equal'  divided>
-                        <Grid.Column width={4}  style={{padding:'5px'}} item>
-                            <MaterialTable
-                                icons={tableIcons}
-                                /*title="Patient Consultations"*/
-                                title=""
-                                columns={[
-                                    // { title: " ID", field: "Id" },
-                                    {
-                                        title: "Consultation Visits", field: "date",
-                                        /*                                           cellStyle: {
-                                                                                       backgroundColor: '#039be5',
-                                                                                       color: '#FFF'
-                                                                                   },*/
-                                        cellStyle:{
-                                            padding:'10px 5px'
-                                        },
-                                        headerStyle: {
-                                            backgroundColor: '#014d88',
-                                        }
-                                    },
-                                    /*                                        { title: "Visit Notes", field: "visitNotes", filtering: false },
-                                                                            { title: "Diagnosis List", field: "diagnosisList", filtering: false },
-                                                                            { title: "Presenting Complaints", field: "presentingComplaints", filtering: false },
-                                                                            { title: "Actions", field: "actions", filtering: false },*/
-                                ]}
-                                data={ patientList.map((row) => ({
-                                    //Id: manager.id,
-                                    date:
-                                        <div>
+  const loadPatientTests = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${baseUrl}laboratory/orders/visits/${patientObj.visitId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-                                            <Button
-                                                basic
-                                                className=" float-end ms-2"
-                                                style={{width:'100%',border:'1px dotted #eee'}}
-                                                onClick={()=>loadConsultationDetails(row)}
-                                            >
-                                                <span style={{padding:'10px 0px', fontSize:'16px', color: '#014d88', fontWeight:'bolder',float:'left'}}>{row.encounterDate}</span>
-                                            </Button>
-                                        </div>
-                                }))}
+      if (response.data.length > 0) {
+        setLabTests(response.data);
+      }
+    } catch (e) {
+      toast.error("An error occurred while fetching lab tests!", {
+        position: toast.POSITION.TOP_CENTER,
+      });
+    }
+  }, [patientObj.visitId]);
 
-                                options={{
-                                    headerStyle: {
-                                        backgroundColor: "#014d88",
-                                        color: "#fff",
-                                        fontSize:'16px',
-                                        padding:'10px',
-                                        fontWeight:'bolder'
-                                    },
-                                    searchFieldStyle: {
-                                        width : '100%',
-                                    },
-                                    toolbar: false,
-                                    search: false,
-                                    filtering: false,
-                                    exportButton: false,
-                                    /*searchFieldAlignment: 'left',*/
-                                    pageSizeOptions:[10,20,100],
-                                    pageSize:10,
-                                    debounceInterval: 400
-                                }}
-                            />
-                        </Grid.Column>
-                        <Grid.Column style={{padding:'0px 10px'}} item>
-                            {selectedVisit &&
-                                <Card >
-                                    <CardContent style={{width:'100%',padding:'5px'}}>
-                                        <PatientConsultationHistoryCard visit={selectedVisit} testOrders={labTests}/>
-                                    </CardContent>
-                                </Card>
-                            }
+  useEffect(() => {
+    patientConsultations();
+    loadPatientTests();
+  }, [patientConsultations, loadPatientTests]);
 
-                        </Grid.Column>
-                    </Grid>
-                </CardContent>
-            </Card>
+  const loadConsultationDetails = (row) => {
+    setSelectedVisit(row);
+  };
 
+  return (
+    <Container style={{ width: "100%", minHeight: "100vh" }}>
+      <br />
+      
+      {/* Use PatientCard component with Post and Checkout buttons and validation */}
+      <PatientCard patientObj={patientObj} />
+      
+      <br />
+      
+      <div style={{ marginTop: '20px' }}>
 
-
-
-            {/*                        <MaterialTable
-                            icons={tableIcons}
-                            title="Patient Consultationsz"
-                            columns={[
-                                // { title: " ID", field: "Id" },
-                                {
-                                  title: "Encounter Date", field: "date",
-                                    cellStyle: {
-                                          backgroundColor: '#039be5',
-                                          color: '#FFF'
-                                        },
-                                        headerStyle: {
-                                          backgroundColor: '#039be5',
-                                        }
-                                },
-                                { title: "Visit Notes", field: "visitNotes", filtering: false },
-                                { title: "Diagnosis List", field: "diagnosisList", filtering: false },
-                                { title: "Presenting Complaints", field: "presentingComplaints", filtering: false },
-                                { title: "Actions", field: "actions", filtering: false },
-                            ]}
-                            data={ patientList.map((row) => ({
-                                //Id: manager.id,
-                                date:row.encounterDate,
-                                visitNotes:row.visitNotes,
-                                diagnosisList:formatDiagnosis(row.diagnosisList),
-                                presentingComplaints:formatPresentingComplaints(row.presentingComplaints),
-                                actions:
-                                    <div>
-                                        <Link
-                                            to={{
-                                                pathname: "/patient-consultation",
-                                                state: { patientObj: row  }
-                                            }}>
-                                             <Button
-                                                icon
-                                                inverted
-                                                color='blue'
-                                                className=" float-end ms-2"
-                                             >
-                                             <Icon name='eye' />
-                                            </Button>
-                                        </Link>
-                                    </div>
-
-                            }))}
-
-                            options={{
-                                headerStyle: {
-                                    backgroundColor: "#01579b",
-                                    color: "#ccc",
-                                },
-                                searchFieldStyle: {
-                                    width : '200%',
-                                    margingLeft: '250px',
-                                },
-                                filtering: false,
-                                exportButton: false,
-                                searchFieldAlignment: 'left',
-                                pageSizeOptions:[10,20,100],
-                                pageSize:10,
-                                debounceInterval: 400
-                            }}
-                        />*/}
-        </Container>
-
-    );
+      <Card>
+        <CardContent>
+          <Grid columns="equal" divided>
+            <Grid.Column width={4} style={{ padding: "5px" }} item>
+              <MaterialTable
+                icons={tableIcons}
+                title=""
+                columns={[
+                  {
+                    title: "Consultation Visits",
+                    field: "date",
+                    cellStyle: {
+                      padding: "10px 5px",
+                    },
+                    headerStyle: {
+                      backgroundColor: "#014d88",
+                    },
+                  },
+                ]}
+                data={patientList.map((row) => ({
+                  date: (
+                    <div>
+                      <Button
+                        basic
+                        className=" float-end ms-2"
+                        style={{ width: "100%", border: "1px dotted #eee" }}
+                        onClick={() => loadConsultationDetails(row)}
+                      >
+                        <span
+                          style={{
+                            padding: "10px 0px",
+                            fontSize: "16px",
+                            color: "#014d88",
+                            fontWeight: "bolder",
+                            float: "left",
+                          }}
+                        >
+                          {row.encounterDate}
+                        </span>
+                      </Button>
+                    </div>
+                  ),
+                }))}
+                options={{
+                  headerStyle: {
+                    backgroundColor: "#014d88",
+                    color: "#fff",
+                    fontSize: "16px",
+                    padding: "10px",
+                    fontWeight: "bolder",
+                  },
+                  searchFieldStyle: {
+                    width: "100%",
+                  },
+                  toolbar: false,
+                  search: false,
+                  filtering: false,
+                  exportButton: false,
+                  pageSizeOptions: [10, 20, 100],
+                  pageSize: 10,
+                  debounceInterval: 400,
+                }}
+              />
+            </Grid.Column>
+            <Grid.Column style={{ padding: "0px 10px" }} item>
+              {selectedVisit && (
+                <Card>
+                  <CardContent style={{ width: "100%", padding: "5px" }}>
+                    <PatientConsultationHistoryCard
+                      visit={selectedVisit}
+                      testOrders={labTests}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </Grid.Column>
+          </Grid>
+        </CardContent>
+      </Card>
+      </div>
+    </Container>
+  );
 };
 
 export default PatientConsultationHistory;

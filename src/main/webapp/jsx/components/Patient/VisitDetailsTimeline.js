@@ -1,0 +1,83 @@
+import React from 'react';
+import '../../../css/timeline.css';
+const getStatus = visit => {
+  return 'Completed';
+};
+
+const VisitDetailsTimeline = ({ visit }) => {
+  return (
+    <ul className="timeline">
+      <li>
+        <div className="timeline-marker card-bg-muted-orange"></div>
+        <span className="timeline-panel text-muted card-bg-one">
+          <h6 className="mb-0">
+            Visit Notes <br />
+            <strong className="text-primary">
+              <span>{visit?.visitNotes}</span>
+            </strong>
+          </h6>
+        </span>
+      </li>
+
+      <li>
+        <div className="timeline-marker bg-warning"></div>
+        <span className="timeline-panel text-muted card-bg-two">
+          <h6 className="mb-0">
+            Presenting Complaints <br />
+            {visit?.presentingComplaints &&
+            visit?.presentingComplaints.length > 0 ? (
+              visit?.presentingComplaints.map(complaint => (
+                <div key={complaint.id}>
+                  <strong className="text-primary">
+                    {complaint.complaint}
+                  </strong>
+                  <div>
+                    Onset: {complaint.onsetDate} | Severity:{' '}
+                    {complaint.severity}
+                  </div>
+                  {complaint.dateResolved && (
+                    <div>Date Resolved: {complaint.dateResolved}</div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <strong className="text-primary">None</strong>
+            )}
+          </h6>
+        </span>
+      </li>
+
+      <li>
+        <div className="timeline-marker card-bg-muted-yellow"></div>
+        <span className="timeline-panel text-muted card-bg-three">
+          <h6 className="mb-0">
+            Diagnosis List <br />
+            {visit?.diagnosisList && visit?.diagnosisList.length > 0 ? (
+              visit?.diagnosisList.map(diag => (
+                <div key={diag.id}>
+                  <strong className="text-primary">{diag.diagnosis}</strong>
+                  <div>
+                    Order: {diag.diagnosisOrder} | Certainty: {diag.certainty}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <strong className="text-primary">None</strong>
+            )}
+          </h6>
+        </span>
+      </li>
+      <li>
+        <div className="timeline-marker card-bg-muted-pink"></div>
+        <span className="timeline-panel text-muted card-bg-four">
+          <h6 className="mb-0">
+            Status <br />
+            <strong className="text-primary">{getStatus(visit)}</strong>
+          </h6>
+        </span>
+      </li>
+    </ul>
+  );
+};
+
+export default VisitDetailsTimeline;

@@ -97,137 +97,158 @@ const useStyles = makeStyles(theme => ({
 }))
 
 
+
 const Patients = (props) => {
+  const [patientList, setPatientList] = useState([]);
 
-    const [patientList, setPatientList] = useState([]);
+  useEffect(() => {
+    patients();
+  }, []);
 
-    useEffect(() => {
-        patients()
-    }, []);
-    ///GET LIST OF Patients
-    async function patients() {
-        axios
-            .get(`${baseUrl}patient/checked-in-by-service/consultation-code`,
-                { headers: {"Authorization" : `Bearer ${token}`} }
-            )
-            .then((response) => {
-                setPatientList(response.data);
-            })
-            .catch((error) => {
-                toast.error("An error occurred while fetching checked-in patients", {
-                    position: toast.POSITION.TOP_RIGHT
-                });
-            });
+  ///GET LIST OF Patients
+  async function patients() {
+    axios
+      .get(`${baseUrl}patient/checked-in-by-service/Consultation_code`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response) => {
+        // Sort by checkInDate (earliest first - queue structure)
+        const sortedData = response.data.sort((a, b) => {
+          return new Date(a.checkInDate) - new Date(b.checkInDate);
+        });
+        setPatientList(sortedData);
+      })
+      .catch((error) => {
+        toast.error("An error occurred while fetching checked-in patients", {
+          position: toast.POSITION.TOP_RIGHT,
+        });
+      });
+  }
+
+  // Format check-in date function
+  const formatCheckInDate = (checkInDate) => {
+    if (!checkInDate) return "";
+
+    try {
+      const date = new Date(checkInDate);
+
+      // Format as: "18 Jul 2025, 11:13 AM"
+      const options = {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      };
+
+      return date.toLocaleDateString("en-GB", options);
+    } catch (error) {
+      return checkInDate; // Return original if formatting fails
     }
-    const calculate_age = dob => {
-        var today = new Date();
-        var dateParts = dob.split("-");
-        var dateObject = new Date(+dateParts[2], dateParts[1] - 1, +dateParts[0]);
-        var birthDate = new Date(dateObject); // create a date object directlyfrom`dob1`argument
-        var age_now = today.getFullYear() - birthDate.getFullYear();
-        var m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age_now--;
-        }
-        if (age_now === 0) {
-            return m + " month(s)";
-        }
-        return age_now + " year(s)";
-    };
+  };
 
-    const getHospitalNumber = (identifier) => {
-        const identifiers = identifier;
-        const hospitalNumber = identifiers.identifier.find(obj => obj.type == 'HospitalNumber');
-        return hospitalNumber ? hospitalNumber.value : '';
-    };
-
-
-    function actionItems(row){
-        //console.log(row);
-        //console.log('try 11')
-        return  [
-            {
-                type:'single',
-                actions:[
-                    {
-                        name:'Dashboard',
-                        type:'link',
-                        icon:<FaEye  size="22"/>,
-                        to:{
-                            pathname: "/patient-history",
-                            state: { patientObj: row  }
-                        }
-                    }
-                ]
-            }
-
-        ]
+  const calculate_age = (dob) => {
+    var today = new Date();
+    var dateParts = dob.split("-");
+    var dateObject = new Date(+dateParts[2], dateParts[1] - 1, +dateParts[0]);
+    var birthDate = new Date(dateObject); // create a date object directlyfrom`dob1`argument
+    var age_now = today.getFullYear() - birthDate.getFullYear();
+    var m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age_now--;
     }
-    //console.log(patientList)
-    return (
-        <div>
-            <Card>
-                <CardBody>
+    if (age_now === 0) {
+      return m + " month(s)";
+    }
+    return age_now + " year(s)";
+  };
 
+  const getHospitalNumber = (patientObj) => {
+    return patientObj.hospitalNumber || "";
+  };
 
-                    <MaterialTable
-                        icons={tableIcons}
-                        title="Find Patient "
-                        columns={[
-                            // { title: " ID", field: "Id" },
-                            {
-                                title: "Patient Name",
-                                field: "name",
-                            },
-                            { title: "Hospital Number", field: "hospital_number", filtering: false },
-                            { title: "Gender", field: "gender", filtering: false },
-                            { title: "Age", field: "age", filtering: false },
-                            { title: "Actions", field: "actions", filtering: false },
-                        ]}
-                        data={ patientList.map((row) => ({
+  function actionItems(row) {
+    return [
+      {
+        type: "single",
+        actions: [
+          {
+            name: "Dashboard",
+            type: "link",
+            icon: <FaEye size="22" />,
+            to: {
+              pathname: "/patient-history",
+              state: { patientObj: row },
+            },
+          },
+        ],
+      },
+    ];
+  }
 
-                            name:row.firstName + " " + row.otherName,
-                            hospital_number: row.identifier.identifier[0].value,
-                            gender:row.sex,
-                            age: (row.dateOfBirth === 0 ||
-                                row.dateOfBirth === undefined ||
-                                row.dateOfBirth === null ||
-                                row.dateOfBirth === "" )
-                                ? 0
-                                : calculate_age(moment(row.dateOfBirth).format("DD-MM-YYYY")),
-
-                               actions:<SplitActionButton actions={actionItems(row)} />
-
-                        }))}
-
-                        options={{
-                            headerStyle: {
-                                backgroundColor: "#014d88",
-                                color: "#fff",
-                                fontSize:'16px',
-                                padding:'10px',
-                                fontWeight:'bolder'
-                            },
-                            searchFieldStyle: {
-                                width : '200%',
-                                margingLeft: '250px',
-                            },
-                            filtering: false,
-                            exportButton: false,
-                            searchFieldAlignment: 'left',
-                            pageSizeOptions:[10,20,100],
-                            pageSize:10,
-                            debounceInterval: 400
-                        }}
-                    />
-
-                </CardBody>
-            </Card>
-
-
-        </div>
-    );
-}
+  return (
+    <div>
+      <Card>
+        <CardBody>
+          <MaterialTable
+            icons={tableIcons}
+            title="Find Patient "
+            columns={[
+              { title: "Check-In-Date", field: "checkInDate" },
+              {
+                title: "Patient Name",
+                field: "name",
+              },
+              {
+                title: "Hospital Number",
+                field: "hospital_number",
+                filtering: false,
+              },
+              { title: "Gender", field: "gender", filtering: false },
+              { title: "Age", field: "age", filtering: false },
+              { title: "Actions", field: "actions", filtering: false },
+            ]}
+            data={patientList.map((row) => ({
+              checkInDate: formatCheckInDate(row.checkInDate),
+              name: row.firstName + " " + row.otherName,
+              hospital_number: row.hospitalNumber,
+              gender: row.sex,
+              age:
+                row.dateOfBirth === 0 ||
+                row.dateOfBirth === undefined ||
+                row.dateOfBirth === null ||
+                row.dateOfBirth === ""
+                  ? 0
+                  : calculate_age(moment(row.dateOfBirth).format("DD-MM-YYYY")),
+              actions: <SplitActionButton actions={actionItems(row)} />,
+            }))}
+            options={{
+              headerStyle: {
+                backgroundColor: "#014d88",
+                color: "#fff",
+                fontSize: "16px",
+                padding: "10px",
+                fontWeight: "bolder",
+              },
+              searchFieldStyle: {
+                width: "200%",
+                margingLeft: "250px",
+              },
+              filtering: false,
+              exportButton: false,
+              searchFieldAlignment: "left",
+              pageSizeOptions: [10, 20, 100],
+              pageSize: 10,
+              debounceInterval: 400,
+              sorting: false, // Disable user sorting to maintain queue order
+            }}
+          />
+        </CardBody>
+      </Card>
+    </div>
+  );
+};
 
 export default Patients;
 

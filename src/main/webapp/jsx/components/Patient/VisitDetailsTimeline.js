@@ -9,6 +9,7 @@ const getStatus = visit => {
 
 const VisitDetailsTimeline = ({ visit }) => {
   const visitIdKey = visit?.id || "unknown-visit";
+
   const renderTypewriter = (text, key, speed = 5) => (
     <Typewriter
       words={[text || "None"]}
@@ -21,7 +22,8 @@ const VisitDetailsTimeline = ({ visit }) => {
     />
   );
 
-  const sanitizedVisitNote = useSanitizeEditorInput(visit?.visitNotes);
+  const sanitizedVisitNote = useSanitizeEditorInput(visit?.visitNotes || "");
+  const noteText = sanitizedVisitNote || "None";
 
   return (
     <ul className="timeline">
@@ -31,10 +33,7 @@ const VisitDetailsTimeline = ({ visit }) => {
           <h6 className="mb-0">
             Visit Notes <br />
             <strong className="text-primary">
-              {renderTypewriter(
-                sanitizedVisitNote || "No visit note",
-                `${visitIdKey}-note`
-              )}
+              {renderTypewriter(noteText, `${visitIdKey}-note`)}
             </strong>
           </h6>
         </span>
@@ -45,9 +44,8 @@ const VisitDetailsTimeline = ({ visit }) => {
         <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Presenting Complaints <br />
-            {visit?.presentingComplaints &&
-            visit?.presentingComplaints.length > 0 ? (
-              visit?.presentingComplaints.map(complaint => (
+            {visit?.presentingComplaints?.length ? (
+              visit.presentingComplaints.map(complaint => (
                 <div key={complaint?.id}>
                   <strong className="text-primary">
                     {renderTypewriter(
@@ -78,8 +76,8 @@ const VisitDetailsTimeline = ({ visit }) => {
         <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Diagnosis List <br />
-            {visit?.diagnosisList && visit?.diagnosisList.length > 0 ? (
-              visit?.diagnosisList.map(diag => (
+            {visit?.diagnosisList?.length ? (
+              visit.diagnosisList.map(diag => (
                 <div key={diag.id}>
                   <strong className="text-primary">
                     {renderTypewriter(
@@ -99,7 +97,7 @@ const VisitDetailsTimeline = ({ visit }) => {
           </h6>
         </span>
       </li>
-
+      {/* 
       <li>
         <div className="timeline-marker card-bg-muted-pink"></div>
         <span className="timeline-panel text-muted card-bg-five">
@@ -110,14 +108,14 @@ const VisitDetailsTimeline = ({ visit }) => {
             </strong>
           </h6>
         </span>
-      </li>
+      </li> */}
 
       <li>
         <div className="timeline-marker card-bg-muted-purple"></div>
         <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Drug Orders <br />
-            {visit?.drugOrders && visit?.drugOrders.length > 0 ? (
+            {visit?.drugOrders?.length ? (
               visit.drugOrders.map(order => (
                 <div key={order?.id} className="mb-2">
                   <strong className="text-primary">
@@ -154,15 +152,16 @@ const VisitDetailsTimeline = ({ visit }) => {
           </h6>
         </span>
       </li>
+
       <li>
         <div className="timeline-marker card-bg-muted-green"></div>
         <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Lab Orders <br />
-            {visit?.labOrders && visit?.labOrders.length > 0 ? (
+            {visit?.labOrders?.length ? (
               visit.labOrders.map((entry, index) => (
                 <div key={index} className="mb-3">
-                  {entry.labOrder?.tests?.length > 0 && (
+                  {entry.labOrder?.tests?.length ? (
                     <div className="mt-2">
                       {entry.labOrder.tests.map(test => (
                         <div key={test.id} className="ml-2">
@@ -191,7 +190,7 @@ const VisitDetailsTimeline = ({ visit }) => {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               ))
             ) : (

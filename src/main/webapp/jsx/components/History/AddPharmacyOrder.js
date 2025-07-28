@@ -399,7 +399,7 @@ const AddPharmacyOrder = props => {
                   </div>
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
-                      <Label className={classes.label}>Dosage Amount</Label>
+                      <Label className={classes.label}>Dosage (Amount)</Label>
                       <InputGroup>
                         <Input
                           className={classes.input}
@@ -443,7 +443,7 @@ const AddPharmacyOrder = props => {
                 <div className="row">
                   <div className="form-group mb-3">
                     <FormGroup>
-                      <Label className={classes.label}>Drug Brand Name</Label>
+                      <Label className={classes.label}>Brand Name</Label>
                       <InputGroup>
                         <Input
                           className={classes.input}
@@ -472,7 +472,7 @@ const AddPharmacyOrder = props => {
                 <div className="row">
                   <div className="form-group mb-3 col-md-6">
                     <FormGroup>
-                      <Label className={classes.label}>Dose Frequency</Label>
+                      <Label className={classes.label}>Frequency</Label>
                       <InputGroup>
                         <Input
                           className={classes.input}

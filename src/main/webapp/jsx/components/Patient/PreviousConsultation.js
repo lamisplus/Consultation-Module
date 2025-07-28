@@ -46,7 +46,6 @@ function PreviousConsultation(props) {
     error: labOrderErrors,
   } = useLabOrdersByPatientId(patientObj?.patientId);
 
-  console.log("pendingLabOrderOrders: ", labOrders);
   const consulationsWithDrugOrders = useAddConsultationDrugOrders(
     consultations,
     drugOrders
@@ -58,7 +57,6 @@ function PreviousConsultation(props) {
   const sortedEncountersByDate = useSortedVisitsByDate(
     consulationsWithDrugAndLabOrders
   );
-  console.log("consultations: ", sortedEncountersByDate);
 
   const activityName = name => {
     const activityMapping = {

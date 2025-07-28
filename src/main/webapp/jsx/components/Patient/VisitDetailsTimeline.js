@@ -1,19 +1,40 @@
-import React from 'react';
-import '../../../css/timeline.css';
+import React from "react";
+import "../../../css/timeline.css";
+import { Typewriter } from "react-simple-typewriter";
+import useSanitizeEditorInput from "../../../hooks/useSanitizeEditorInput";
+
 const getStatus = visit => {
-  return 'Completed';
+  return "Completed";
 };
 
 const VisitDetailsTimeline = ({ visit }) => {
+  const visitIdKey = visit?.id || "unknown-visit";
+  const renderTypewriter = (text, key, speed = 5) => (
+    <Typewriter
+      words={[text || "None"]}
+      typeSpeed={speed}
+      deleteSpeed={0}
+      delaySpeed={1000}
+      loop={1}
+      cursor={false}
+      key={key}
+    />
+  );
+
+  const sanitizedVisitNote = useSanitizeEditorInput(visit?.visitNotes);
+
   return (
     <ul className="timeline">
       <li>
         <div className="timeline-marker card-bg-muted-orange"></div>
-        <span className="timeline-panel text-muted card-bg-one">
+        <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Visit Notes <br />
             <strong className="text-primary">
-              <span>{visit?.visitNotes}</span>
+              {renderTypewriter(
+                sanitizedVisitNote || "No visit note",
+                `${visitIdKey}-note`
+              )}
             </strong>
           </h6>
         </span>
@@ -21,22 +42,27 @@ const VisitDetailsTimeline = ({ visit }) => {
 
       <li>
         <div className="timeline-marker bg-warning"></div>
-        <span className="timeline-panel text-muted card-bg-two">
+        <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Presenting Complaints <br />
             {visit?.presentingComplaints &&
             visit?.presentingComplaints.length > 0 ? (
               visit?.presentingComplaints.map(complaint => (
-                <div key={complaint.id}>
+                <div key={complaint?.id}>
                   <strong className="text-primary">
-                    {complaint.complaint}
+                    {renderTypewriter(
+                      complaint.complaint || "Unknown complaint",
+                      `${visitIdKey}-complaint-${complaint?.id}`
+                    )}
                   </strong>
                   <div>
-                    Onset: {complaint.onsetDate} | Severity:{' '}
-                    {complaint.severity}
+                    <strong>Onset:</strong> {complaint.onsetDate} |{" "}
+                    <strong>Severity:</strong> {complaint.severity}
                   </div>
                   {complaint.dateResolved && (
-                    <div>Date Resolved: {complaint.dateResolved}</div>
+                    <div>
+                      <strong>Date Resolved:</strong> {complaint.dateResolved}
+                    </div>
                   )}
                 </div>
               ))
@@ -49,15 +75,21 @@ const VisitDetailsTimeline = ({ visit }) => {
 
       <li>
         <div className="timeline-marker card-bg-muted-yellow"></div>
-        <span className="timeline-panel text-muted card-bg-three">
+        <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Diagnosis List <br />
             {visit?.diagnosisList && visit?.diagnosisList.length > 0 ? (
               visit?.diagnosisList.map(diag => (
                 <div key={diag.id}>
-                  <strong className="text-primary">{diag.diagnosis}</strong>
+                  <strong className="text-primary">
+                    {renderTypewriter(
+                      diag.diagnosis || "Unknown diagnosis",
+                      `${visitIdKey}-diagnosis-${diag?.id}`
+                    )}
+                  </strong>
                   <div>
-                    Order: {diag.diagnosisOrder} | Certainty: {diag.certainty}
+                    <strong>Order:</strong> {diag.diagnosisOrder} |{" "}
+                    <strong>Certainty:</strong> {diag.certainty}
                   </div>
                 </div>
               ))
@@ -67,12 +99,104 @@ const VisitDetailsTimeline = ({ visit }) => {
           </h6>
         </span>
       </li>
+
       <li>
         <div className="timeline-marker card-bg-muted-pink"></div>
-        <span className="timeline-panel text-muted card-bg-four">
+        <span className="timeline-panel text-muted card-bg-five">
           <h6 className="mb-0">
             Status <br />
-            <strong className="text-primary">{getStatus(visit)}</strong>
+            <strong className="text-primary">
+              {renderTypewriter(getStatus(visit), `${visitIdKey}-status`)}
+            </strong>
+          </h6>
+        </span>
+      </li>
+
+      <li>
+        <div className="timeline-marker card-bg-muted-purple"></div>
+        <span className="timeline-panel text-muted card-bg-five">
+          <h6 className="mb-0">
+            Drug Orders <br />
+            {visit?.drugOrders && visit?.drugOrders.length > 0 ? (
+              visit.drugOrders.map(order => (
+                <div key={order?.id} className="mb-2">
+                  <strong className="text-primary">
+                    {renderTypewriter(
+                      order.medicationName || "Unnamed Medication",
+                      `${visitIdKey}-drug-${order?.id}`
+                    )}
+                  </strong>
+                  <div>
+                    <strong>Strength:</strong> {order.strength} |{" "}
+                    <strong>Quantity:</strong> {order.quantityPrescribed}
+                  </div>
+                  <div>
+                    <strong>Frequency:</strong> {order.frequency} |{" "}
+                    <strong>Time:</strong> {order.timingInstructions}
+                  </div>
+                  {order.duration && (
+                    <div>
+                      <strong>Duration:</strong> {order.duration}{" "}
+                      {order.durationUnit || ""}
+                    </div>
+                  )}
+                  {order.notes && (
+                    <div>
+                      <strong>Notes:</strong> {order.notes}
+                    </div>
+                  )}
+                  <hr />
+                </div>
+              ))
+            ) : (
+              <strong className="text-primary">None</strong>
+            )}
+          </h6>
+        </span>
+      </li>
+      <li>
+        <div className="timeline-marker card-bg-muted-green"></div>
+        <span className="timeline-panel text-muted card-bg-five">
+          <h6 className="mb-0">
+            Lab Orders <br />
+            {visit?.labOrders && visit?.labOrders.length > 0 ? (
+              visit.labOrders.map((entry, index) => (
+                <div key={index} className="mb-3">
+                  {entry.labOrder?.tests?.length > 0 && (
+                    <div className="mt-2">
+                      {entry.labOrder.tests.map(test => (
+                        <div key={test.id} className="ml-2">
+                          <div>
+                            <strong className="text-primary">
+                              {test.labTestName}
+                            </strong>
+                          </div>
+                          {entry.labOrder?.orderDate && (
+                            <div>
+                              <strong>Order Date:</strong>{" "}
+                              {entry.labOrder.orderDate}
+                            </div>
+                          )}
+                          <div>
+                            <strong>Group:</strong> {test.labTestGroupName}
+                          </div>
+                          <div>
+                            <strong>Measurement:</strong> {test.unitMeasurement}
+                          </div>
+                          <div>
+                            <strong>Status:</strong>{" "}
+                            {test.labTestOrderStatusName}
+                          </div>
+                          <hr />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <strong className="text-primary">None</strong>
+            )}
           </h6>
         </span>
       </li>

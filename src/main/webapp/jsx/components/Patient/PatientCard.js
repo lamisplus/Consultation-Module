@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { withStyles } from "@material-ui/core/styles";
-import classNames from "classnames";
 import ExpansionPanel from "@material-ui/core/ExpansionPanel";
-import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails";
 import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
 import ExpansionPanelActions from "@material-ui/core/ExpansionPanelActions";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import Divider from "@material-ui/core/Divider";
-import { Button } from "semantic-ui-react";
-import { Label } from "semantic-ui-react";
 import "semantic-ui-css/semantic.min.css";
 import { Col, Row } from "reactstrap";
 import { Modal } from "react-bootstrap";
@@ -18,50 +14,13 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { token, url as baseUrl } from "../../../api";
 import { useHistory } from "react-router-dom";
-
-import moment from 'moment';
-import PostPatient from './PostPatient';
-import PostClient from './PostClient';
-import { Link } from 'react-router-dom';
-import MatButton from '@material-ui/core/Button';
-import { TiArrowBack } from 'react-icons/ti';
-
-const styles = theme => ({
-  root: {
-    width: '100%',
-    marginBottom: '1em',
-  },
-  heading: {
-    fontSize: theme.typography.pxToRem(15),
-  },
-  secondaryHeading: {
-    fontSize: theme.typography.pxToRem(15),
-    color: theme.palette.text.secondary,
-  },
-  icon: {
-    verticalAlign: 'bottom',
-    height: 20,
-    width: 20,
-  },
-  details: {
-    alignItems: 'center',
-  },
-  column: {
-    flexBasis: '20.33%',
-  },
-  helper: {
-    borderLeft: `2px solid ${theme.palette.divider}`,
-    padding: `${theme.spacing.unit}px ${theme.spacing.unit * 2}px`,
-  },
-  link: {
-    color: theme.palette.primary.main,
-    textDecoration: 'none',
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
-});
-
+import PostClient from "./PostClient";
+import MatButton from "@material-ui/core/Button";
+import { TiArrowBack } from "react-icons/ti";
+import usePatientCardStyles from "../../../hooks/usePatientCardStyles";
+import SaveIcon from "@material-ui/icons/Save";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+let styles;
 function PatientCard(props) {
   const { classes } = props;
   const patientObjs = props.patientObj ? props.patientObj : {};
@@ -71,11 +30,9 @@ function PatientCard(props) {
   const [checkingOut, setCheckingOut] = useState(false);
   const [hasConsultationHistory, setHasConsultationHistory] = useState(false);
   const history = useHistory();
-
   const toggle = () => setModal(!modal);
   const toggleCheckout = () => setCheckoutModal(!checkoutModal);
-
-  // Check if patient has consultation history for validation
+  styles = usePatientCardStyles();
   const checkConsultationHistory = useCallback(async () => {
     try {
       const response = await axios.get(
@@ -95,7 +52,7 @@ function PatientCard(props) {
     }
   }, [patientObj.id, checkConsultationHistory]);
 
-  const calculate_age = (dobInput) => {
+  const calculate_age = dobInput => {
     const dob = new Date(dobInput);
     const today = new Date();
 
@@ -113,22 +70,22 @@ function PatientCard(props) {
     }
 
     if (years < 1) {
-      return `${months} month${months !== 1 ? 's' : ''}`;
+      return `${months} month${months !== 1 ? "s" : ""}`;
     } else {
-      return `${years} year${years !== 1 ? 's' : ''}`;
+      return `${years} year${years !== 1 ? "s" : ""}`;
     }
   };
 
   const getHospitalNumber = patientObj => {
-    return patientObj.hospitalNumber || '';
+    return patientObj.hospitalNumber || "";
   };
 
   const getPhoneNumber = patientObj => {
-    return patientObj.phoneNumber || '';
+    return patientObj.phoneNumber || "";
   };
 
   const getAddress = patientObj => {
-    return patientObj.address || '';
+    return patientObj.address || "";
   };
 
   const PostPatientService = row => {
@@ -167,33 +124,30 @@ function PatientCard(props) {
   };
 
   return (
-    <div
-      className={classes.root}
-      // style={{ position: "sticky", top: "10px", zIndex: 1000 }}
-    >
+    <div className={classes.root}>
       <ExpansionPanel defaultExpanded>
         <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
           <Row>
             <Col md={11}>
-              <Row className={'mt-1'}>
+              <Row className={"mt-1"}>
                 <Col md={12} className={classes.root2}>
-                  <b style={{ fontSize: '25px', color: 'rgb(153, 46, 98)' }}>
+                  <b style={{ fontSize: "25px", color: "rgb(153, 46, 98)" }}>
                     {patientObj.surname +
-                      ', ' +
+                      ", " +
                       patientObj.firstName +
-                      ' ' +
+                      " " +
                       patientObj.otherName}
                   </b>
                 </Col>
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: '10px' }}
+                  style={{ marginTop: "10px" }}
                 >
                   <span>
-                    {' '}
-                    Hospital Number :{' '}
-                    <b style={{ color: '#0B72AA' }}>
+                    {" "}
+                    Hospital Number :{" "}
+                    <b style={{ color: "#0B72AA" }}>
                       {getHospitalNumber(patientObj)}
                     </b>
                   </span>
@@ -202,45 +156,45 @@ function PatientCard(props) {
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: '10px' }}
+                  style={{ marginTop: "10px" }}
                 >
                   <span>
-                    Date Of Birth :{' '}
-                    <b style={{ color: '#0B72AA' }}>
-                      {patientObj.dateOfBirth || patientObj.dateofbirth}{' '}
+                    Date Of Birth :{" "}
+                    <b style={{ color: "#0B72AA" }}>
+                      {patientObj.dateOfBirth || patientObj.dateofbirth}{" "}
                     </b>
                   </span>
                 </Col>
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: '10px' }}
+                  style={{ marginTop: "10px" }}
                 >
                   <span>
-                    {' '}
-                    Age :{' '}
-                    <b style={{ color: '#0B72AA' }}>
+                    {" "}
+                    Age :{" "}
+                    <b style={{ color: "#0B72AA" }}>
                       {calculate_age(
                         patientObj.dateOfBirth || patientObj.dateofbirth
                       )}
                     </b>
                   </span>
                 </Col>
-                <Col md={4} style={{ marginTop: '10px' }}>
+                <Col md={4} style={{ marginTop: "10px" }}>
                   <span>
-                    {' '}
-                    Sex : <b style={{ color: '#0B72AA' }}>{patientObj.sex}</b>
+                    {" "}
+                    Sex : <b style={{ color: "#0B72AA" }}>{patientObj.sex}</b>
                   </span>
                 </Col>
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: '10px' }}
+                  style={{ marginTop: "10px" }}
                 >
                   <span>
-                    {' '}
-                    Phone Number :{' '}
-                    <b style={{ color: '#0B72AA' }}>
+                    {" "}
+                    Phone Number :{" "}
+                    <b style={{ color: "#0B72AA" }}>
                       {getPhoneNumber(patientObj)}
                     </b>
                   </span>
@@ -248,12 +202,12 @@ function PatientCard(props) {
                 <Col
                   md={4}
                   className={classes.root2}
-                  style={{ marginTop: '10px' }}
+                  style={{ marginTop: "10px" }}
                 >
                   <span>
-                    {' '}
-                    Address :{' '}
-                    <b style={{ color: '#0B72AA' }}>{getAddress(patientObj)}</b>
+                    {" "}
+                    Address :{" "}
+                    <b style={{ color: "#0B72AA" }}>{getAddress(patientObj)}</b>
                   </span>
                 </Col>
               </Row>
@@ -262,59 +216,55 @@ function PatientCard(props) {
         </ExpansionPanelSummary>
         <Divider />
         <ExpansionPanelActions expandIcon={<ExpandMoreIcon />}>
-          <div className="float-end" style={{ floated: "right" }}>
+          <div className="d-flex align-items-center">
             {" "}
-            <Button floated="right" style={{ padding: "0px" }}>
+            <div className="m-1">
               <MatButton
-                variant="contained"
-                floated="right"
+                startIcon={<ExitToAppIcon />}
+                style={{
+                  backgroundColor: "#208001",
+                  color: "#fff",
+                  whiteSpace: "nowrap",
+                }}
+                onClick={toggleCheckout}
+              >
+                {" "}
+                Checkout Patient
+              </MatButton>
+            </div>
+            <div className="m-1">
+              {hasConsultationHistory && (
+                <MatButton
+                  startIcon={<SaveIcon />}
+                  style={{
+                    backgroundColor: "#014d88",
+
+                    color: "#fff",
+                    whiteSpace: "nowrap",
+                  }}
+                  onClick={() => PostPatientService(patientObj)}
+                >
+                  {" "}
+                  Post Patient to Services
+                </MatButton>
+              )}
+            </div>
+            <div className="m-1">
+              <MatButton
                 startIcon={<TiArrowBack />}
                 onClick={() => history.goBack()}
                 style={{
                   backgroundColor: "rgb(153, 46, 98)",
                   color: "#fff",
-                  height: "35px",
                 }}
               >
-                <span style={{ textTransform: "capitalize" }}>Back</span>
+                Back
               </MatButton>
-            </Button>{" "}
-            {/* Post Patient Button - Only shows if patient has consultation history */}
-            {hasConsultationHistory && (
-              <Button
-                floated="right"
-                style={{
-                  backgroundColor: "#014d88",
-                  color: "#fff",
-                  height: "35px",
-                  marginLeft: "10px",
-                }}
-                onClick={() => PostPatientService(patientObj)}
-              >
-                Post Patient to Services
-              </Button>
-            )}
-            {/* Checkout Button - Always available (no validation) */}
-            <Button
-              floated="right"
-              style={{
-                backgroundColor: "#208001",
-                color: "#fff",
-                height: "35px",
-                marginLeft: "10px",
-              }}
-              onClick={toggleCheckout}
-            >
-              Checkout Patient
-            </Button>
+            </div>
           </div>
         </ExpansionPanelActions>
       </ExpansionPanel>
-
-      {/* Post Patient Modal */}
       <PostClient toggle={toggle} showModal={modal} patientObj={patientObj} />
-
-      {/* Checkout Confirmation Modal */}
       <Modal
         show={checkoutModal}
         onHide={toggleCheckout}

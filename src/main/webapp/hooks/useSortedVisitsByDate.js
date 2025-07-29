@@ -9,7 +9,7 @@ export function useSortedVisitsByDate(visits) {
     }, {});
 
     const result = Object.entries(grouped)
-      .map(([date, visits]) => ({
+      ?.map(([date, visits]) => ({
         date,
         visits: visits.sort((a, b) => b.id - a.id),
       }))

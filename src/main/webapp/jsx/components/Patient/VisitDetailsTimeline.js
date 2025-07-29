@@ -45,7 +45,7 @@ const VisitDetailsTimeline = ({ visit }) => {
           <h6 className="mb-0">
             Presenting Complaints <br />
             {visit?.presentingComplaints?.length ? (
-              visit.presentingComplaints.map(complaint => (
+              visit.presentingComplaints?.map(complaint => (
                 <div key={complaint?.id}>
                   <strong className="text-primary">
                     {renderTypewriter(
@@ -77,7 +77,7 @@ const VisitDetailsTimeline = ({ visit }) => {
           <h6 className="mb-0">
             Diagnosis List <br />
             {visit?.diagnosisList?.length ? (
-              visit.diagnosisList.map(diag => (
+              visit.diagnosisList?.map(diag => (
                 <div key={diag.id}>
                   <strong className="text-primary">
                     {renderTypewriter(
@@ -116,7 +116,7 @@ const VisitDetailsTimeline = ({ visit }) => {
           <h6 className="mb-0">
             Drug Orders <br />
             {visit?.drugOrders?.length ? (
-              visit.drugOrders.map(order => (
+              visit.drugOrders?.map(order => (
                 <div key={order?.id} className="mb-2">
                   <strong className="text-primary">
                     {renderTypewriter(
@@ -159,11 +159,11 @@ const VisitDetailsTimeline = ({ visit }) => {
           <h6 className="mb-0">
             Lab Orders <br />
             {visit?.labOrders?.length ? (
-              visit.labOrders.map((entry, index) => (
+              visit.labOrders?.map((entry, index) => (
                 <div key={index} className="mb-3">
                   {entry.labOrder?.tests?.length ? (
                     <div className="mt-2">
-                      {entry.labOrder.tests.map(test => (
+                      {entry.labOrder.tests?.map(test => (
                         <div key={test.id} className="ml-2">
                           <div>
                             <strong className="text-primary">

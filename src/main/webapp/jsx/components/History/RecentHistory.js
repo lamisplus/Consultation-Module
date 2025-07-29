@@ -690,7 +690,10 @@ const Widget = props => {
                           id="onsetDate"
                           name="onsetDate"
                           type="date"
-                          min={moment(new Date()).format("YYYY-MM-DD")}
+                          max={moment(encounterDate).format("YYYY-MM-DD")}
+                          min={moment(patientObj.dateOfBirth).format(
+                            "YYYY-MM-DD"
+                          )}
                           fluid
                           placeholder="Onset Date"
                           value={inputField.onsetDate}

@@ -136,6 +136,7 @@ function PreviousConsultation(props) {
                                     {encounter?.visits &&
                                       encounter?.visits.map((visit, id) => (
                                         <li
+                                          // className="btn btn-primary d-block"
                                           onClick={() =>
                                             onSelectEncounter(visit)
                                           }

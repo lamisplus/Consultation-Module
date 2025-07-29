@@ -25,6 +25,7 @@ import "react-summernote/dist/react-summernote.css"; // import styles
 import { Spinner } from "reactstrap";
 import useMedicationValidation from "../../../hooks/useMedicationValidation";
 import usePharmacyOrderStyles from "../../../hooks/usePharmacyOrderStyles";
+import * as moment from "moment";
 
 const AddPharmacyOrder = props => {
   const patientObj = props.patientObj;
@@ -505,6 +506,10 @@ const AddPharmacyOrder = props => {
                           type="date"
                           name="startDate"
                           id="startDate"
+                          min={moment(pharmacyOrder.encounterDate).format(
+                            "YYYY-MM-DD"
+                          )}
+                          max={moment(new Date()).format("YYYY-MM-DD")}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.startDate}

@@ -4,7 +4,7 @@
 }
 
 .timeline:before {
-  content: '';
+  content: "";
   position: absolute;
   left: 1%;
   top: 0;
@@ -94,5 +94,8 @@
   background: #fe8447 !important;
 }
 .card-bg-muted-pink {
-  background: #ff78c5 !important;
+  background: #3c01a3 !important;
+}
+.card-bg-five {
+  background-color: #e5def5;
 }

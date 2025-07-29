@@ -256,14 +256,14 @@ a:focus {
 
 .dd .nestable-item-name {
   color: #fff;
-  background: #0E8A74;
+  background: #0e8a74;
   display: block;
   height: 35px;
   margin: 5px 0;
   padding: 8px 10px;
   text-decoration: none;
   font-weight: 700;
-  border: 1px solid #EEEEEE;
+  border: 1px solid #eeeeee;
   border-radius: 5px;
   box-sizing: border-box;
   font-size: 13px;
@@ -669,22 +669,23 @@ button.react-calendar__tile.react-calendar__tile--active.react-calendar__tile--r
   display: none;
 }
 
-.nestable .icon-minus-gray,.nestable .icon-plus-gray{
-	background-image:none;
+.nestable .icon-minus-gray,
+.nestable .icon-plus-gray {
+  background-image: none;
 }
-.nestable .nestable-icon:before{
-	content:"\f068";
-	font-family:FontAwesome;
-	width: auto;
-	height: auto;
-	display: contents;
+.nestable .nestable-icon:before {
+  content: "\f068";
+  font-family: FontAwesome;
+  width: auto;
+  height: auto;
+  display: contents;
 }
-.nestable .nestable-item--children-collapsed .nestable-icon:before{
-	content:"\f067";
-	font-family:FontAwesome;
-	width: auto;
-	height: auto;
-	display: contents;
+.nestable .nestable-item--children-collapsed .nestable-icon:before {
+  content: "\f067";
+  font-family: FontAwesome;
+  width: auto;
+  height: auto;
+  display: contents;
 }
 
 span {

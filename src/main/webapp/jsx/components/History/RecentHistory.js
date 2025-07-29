@@ -26,7 +26,6 @@ import Box from "@mui/material/Box";
 import { Table } from "semantic-ui-react";
 import { format } from "date-fns";
 import { useHistory } from "react-router-dom";
-import ButtonMui from "@material-ui/core/Button";
 import AddPharmacyOrder from "./AddPharmacyOrder";
 import EditPharmacyOrder from "./EditPharmacyOrder";
 import { makeStyles } from "@material-ui/core/styles";
@@ -35,8 +34,9 @@ import _ from "lodash";
 import VitalsCard from "../Consultation/VitalsCard";
 import { icd10 } from "./icd-10";
 import PostClient from "../Patient/PostClient";
+import useSanitizeEditorInput from "../../../hooks/useSanitizeEditorInput";
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
   card: {
     margin: theme.spacing(20),
     display: "flex",
@@ -51,11 +51,7 @@ const useStyles = makeStyles((theme) => ({
     margin: theme.spacing(3, 0, 2),
   },
   cardBottom: {
-    marginBottom: 20,
-  },
-  Select: {
-    height: 45,
-    width: 350,
+    marginBottom: "1.3em",
   },
   button: {
     margin: theme.spacing(1),
@@ -66,32 +62,32 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   input: {
-    borderRadius: "0px",
-    fontSize: "14px",
+    borderRadius: 0,
+    fontSize: "8em",
     color: "#000",
   },
   error: {
     color: "#f85032",
-    fontSize: "11px",
+    fontSize: ".7em",
   },
   success: {
     color: "#4BB543",
-    fontSize: "11px",
+    fontSize: ".7em",
   },
   inputGroupText: {
     backgroundColor: "#014d88",
     fontWeight: "bolder",
     color: "#fff",
-    borderRadius: "0px",
+    borderRadius: 0,
   },
   label: {
-    fontSize: "14px",
+    fontSize: ".8em",
     color: "#014d88",
     fontWeight: "600",
   },
 }));
 
-const Widget = (props) => {
+const Widget = props => {
   const classes = useStyles();
   const patientObj = props.patientObj ? props.patientObj : {};
   const [patientObjs, setpatientObjs] = useState(patientObj);
@@ -195,7 +191,7 @@ const Widget = (props) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLabGroups(response.data);
-      const allTests = response.data.flatMap((group) => group.labTests);
+      const allTests = response.data.flatMap(group => group.labTests);
       setPrevTests(allTests);
     } catch (e) {
       toast.error("Error loading lab test groups", {
@@ -242,13 +238,13 @@ const Widget = (props) => {
     let temp = { ...errors };
     temp.body = body ? "" : "Visit note is required.";
 
-    inputFields.forEach((x) => {
+    inputFields.forEach(x => {
       temp.onsetDate = x.onsetDate ? "" : "Onset Date is required.";
       temp.complaint = x.complaint ? "" : "Complaint is required.";
       temp.severity = x.severity ? "" : "Severity is required.";
     });
 
-    inputFieldsDiagnosis.forEach((y) => {
+    inputFieldsDiagnosis.forEach(y => {
       temp.diagnosis = y.diagnosis ? "" : "Condition is required.";
       temp.diagnosisOrder = y.diagnosisOrder
         ? ""
@@ -257,23 +253,23 @@ const Widget = (props) => {
     });
 
     setErrors({ ...temp });
-    return Object.values(temp).every((x) => x === "");
+    return Object.values(temp).every(x => x === "");
   };
 
   // Form submission
-  const onSubmit = async (data) => {
+  const onSubmit = async data => {
     if (!validateInputs()) {
       return;
     }
 
     try {
       const diagnosisList = inputFieldsDiagnosis
-        .filter((field) => field.diagnosis)
-        .map((field) => ({ ...field }));
+        .filter(field => field.diagnosis)
+        .map(field => ({ ...field }));
 
       const presentingComplaints = inputFields
-        .filter((field) => field.complaint)
-        .map((field) => ({ ...field }));
+        .filter(field => field.complaint)
+        .map(field => ({ ...field }));
 
       const consultationData = {
         diagnosisList,
@@ -296,13 +292,13 @@ const Widget = (props) => {
       // Handle lab tests if any
       const labTests = inputFieldsLab
         .filter(
-          (field) =>
+          field =>
             field.encounterDate &&
             field.labOrder &&
             field.labTest &&
             field.priority
         )
-        .map((field) => {
+        .map(field => {
           const labOrderParts = field.labOrder.split("-");
           const labTestGroupId = parseInt(labOrderParts[0], 10);
           const description =
@@ -370,7 +366,7 @@ const Widget = (props) => {
     }
   };
 
-  const OnError = (errors) => {
+  const OnError = errors => {
     console.error(errors);
     toast.error("Visit Note is required", {
       position: toast.POSITION.TOP_CENTER,
@@ -378,7 +374,7 @@ const Widget = (props) => {
   };
 
   // Form field handlers
-  const handleInputChangeBasic = (e) => {
+  const handleInputChangeBasic = e => {
     setSignature({ name: e.target.value });
   };
 
@@ -389,7 +385,7 @@ const Widget = (props) => {
     ]);
   };
 
-  const removeHandleAddFields = (e) => {
+  const removeHandleAddFields = e => {
     e.preventDefault();
     if (inputFields.length > 1) {
       setInputFields(inputFields.slice(0, -1));
@@ -403,7 +399,7 @@ const Widget = (props) => {
     ]);
   };
 
-  const removeHandleAddDiagFields = (e) => {
+  const removeHandleAddDiagFields = e => {
     e.preventDefault();
     if (inputFieldsDiagnosis.length > 1) {
       setInputFieldsDiagnosis(inputFieldsDiagnosis.slice(0, -1));
@@ -423,7 +419,7 @@ const Widget = (props) => {
     ]);
   };
 
-  const removeHandleAddFieldsLab = (e) => {
+  const removeHandleAddFieldsLab = e => {
     e.preventDefault();
     if (inputFieldsLab.length > 1) {
       setInputFieldsLab(inputFieldsLab.slice(0, -1));
@@ -456,8 +452,8 @@ const Widget = (props) => {
     setInputFieldsDiagnosis(values);
   };
 
-  const labCascade = (id) => {
-    const selectedGroup = labGroups.find((x) => x.id == id);
+  const labCascade = id => {
+    const selectedGroup = labGroups.find(x => x.id == id);
     if (selectedGroup) {
       setLabTests(selectedGroup.labTests);
     }
@@ -479,16 +475,17 @@ const Widget = (props) => {
     setInputFieldsLab(values);
   };
 
-  const handleAddPharmacyOrder = () => {
+  const handleAddPharmacyOrder = e => {
+    e.preventDefault();
     setPharmacyModal(!pharmacyModal);
   };
 
-  const handleEditPharmacyOrder = (pharmacy) => {
+  const handleEditPharmacyOrder = pharmacy => {
     setEditPharmacyOrderValue(pharmacy);
     setPharmacyOrderModal(!pharmacyOrderModal);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async id => {
     try {
       await axios.delete(`${apiUrl}drug-orders/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -505,7 +502,7 @@ const Widget = (props) => {
     }
   };
 
-  const PostPatientService = (row) => {
+  const PostPatientService = row => {
     setpatientObjs({ ...patientObj, ...row });
     setModalPost(!modalPost);
   };
@@ -529,15 +526,24 @@ const Widget = (props) => {
     loadPharmacyOrders,
   ]);
 
+  const sanitizedEditorText = useSanitizeEditorInput(body);
+  useEffect(() => setBody(sanitizedEditorText), [sanitizedEditorText]);
+
   return (
-    <Grid columns="equal" style={{ minHeight: "100vh" }}>
-      <VitalsCard props={props} />
-      <Grid.Column width={11} style={{ paddingLeft: "20px" }}>
+    <Grid
+      stackable
+      columns="equal"
+      style={{ minHeight: "100vh", paddingTop: "1em" }}
+    >
+      <Grid.Column width={5}>
+        <VitalsCard props={props} />
+      </Grid.Column>
+      <Grid.Column style={{ paddingLeft: "2%" }} width={11}>
         <form onSubmit={handleSubmit(onSubmit, OnError)}>
           <Label
             as="a"
             color="black"
-            style={{ width: "100%", height: "35px", fontSize: "16px" }}
+            style={{ width: "100%", fontSize: "1em" }}
           >
             <b>Physical Examination</b>
           </Label>
@@ -547,10 +553,9 @@ const Widget = (props) => {
               <span
                 className="input-group-text"
                 style={{
-                  height: "40px",
                   backgroundColor: "#014d88",
                   color: "#fff",
-                  fontSize: "14px",
+                  fontSize: ".8em",
                 }}
               >
                 Encounter Date
@@ -584,8 +589,7 @@ const Widget = (props) => {
                   backgroundColor: "#014d88",
                   color: "#fff",
                   width: "100%",
-                  height: "35px",
-                  fontSize: "16px",
+                  fontSize: "1em",
                 }}
               >
                 {"Patient's visit note"}
@@ -597,7 +601,7 @@ const Widget = (props) => {
                 textareaName="visitNote"
                 initialValue=""
                 init={{
-                  width: 1000,
+                  width: "100%",
                   height: 300,
                   menubar: false,
                   plugins: [],
@@ -607,9 +611,9 @@ const Widget = (props) => {
                     "alignright alignjustify | bullist numlist outdent indent | " +
                     "removeformat | help",
                   content_style:
-                    "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+                    "body { font-family:Helvetica,Arial,sans-serif; font-size: 1em }",
                 }}
-                onEditorChange={(newText) => setBody(newText)}
+                onEditorChange={newText => setBody(newText)}
               />
             </div>
             <br />
@@ -621,8 +625,7 @@ const Widget = (props) => {
                 backgroundColor: "#014d88",
                 color: "#fff",
                 width: "100%",
-                height: "35px",
-                fontSize: "16px",
+                fontSize: "1em",
               }}
             >
               Presenting Complaints
@@ -650,7 +653,7 @@ const Widget = (props) => {
                       <Table.Cell>
                         <Autocomplete
                           id="complaint"
-                          getOptionLabel={(icd10) =>
+                          getOptionLabel={icd10 =>
                             `${icd10.code} ${icd10.desc}`
                           }
                           disablePortal
@@ -664,7 +667,7 @@ const Widget = (props) => {
                               {icd10.code} {icd10.desc}
                             </Box>
                           )}
-                          renderInput={(params) => (
+                          renderInput={params => (
                             <TextField {...params} label="Select complaints" />
                           )}
                           value={inputFields.complaint}
@@ -691,7 +694,7 @@ const Widget = (props) => {
                           fluid
                           placeholder="Onset Date"
                           value={inputField.onsetDate}
-                          onChange={(event) => handleInputChange(index, event)}
+                          onChange={event => handleInputChange(index, event)}
                         />
                         {errors.onsetDate && (
                           <span className={classes.error}>
@@ -702,13 +705,13 @@ const Widget = (props) => {
                       <Table.Cell>
                         <select
                           style={{
-                            borderRadius: "0px",
-                            fontSize: "14px",
+                            borderRadius: 0,
+                            fontSize: ".8em",
                             color: "#000",
                           }}
                           className="ui fluid selection dropdown"
                           value={inputField.severity}
-                          onChange={(event) => handleInputChange(index, event)}
+                          onChange={event => handleInputChange(index, event)}
                           name="severity"
                           id="severity"
                         >
@@ -763,8 +766,7 @@ const Widget = (props) => {
                 backgroundColor: "#992E62",
                 color: "#fff",
                 width: "100%",
-                height: "35px",
-                fontSize: "16px",
+                fontSize: "1em",
               }}
             >
               Clinical Diagnosis
@@ -790,7 +792,7 @@ const Widget = (props) => {
                       <Table.Cell>
                         <Autocomplete
                           id="diagnosis"
-                          getOptionLabel={(icd10) =>
+                          getOptionLabel={icd10 =>
                             `${icd10.code} ${icd10.desc}`
                           }
                           disablePortal
@@ -804,7 +806,7 @@ const Widget = (props) => {
                               {icd10.code} {icd10.desc}
                             </Box>
                           )}
-                          renderInput={(params) => (
+                          renderInput={params => (
                             <TextField {...params} label="Select conditions" />
                           )}
                           value={inputFieldsDiagnosis.diagnosis}
@@ -824,13 +826,13 @@ const Widget = (props) => {
                       <Table.Cell>
                         <select
                           style={{
-                            borderRadius: "0px",
-                            fontSize: "14px",
+                            borderRadius: 0,
+                            fontSize: ".8em",
                             color: "#000",
                           }}
                           className="ui fluid selection dropdown"
                           value={diagInputField.diagnosisOrder}
-                          onChange={(event) =>
+                          onChange={event =>
                             handleInputDiagChange(diagIndex, event)
                           }
                           name="diagnosisOrder"
@@ -849,13 +851,13 @@ const Widget = (props) => {
                       <Table.Cell>
                         <select
                           style={{
-                            borderRadius: "0px",
-                            fontSize: "14px",
+                            borderRadius: 0,
+                            fontSize: ".8em",
                             color: "#000",
                           }}
                           className="ui fluid selection dropdown"
                           value={diagInputField.certainty}
-                          onChange={(event) =>
+                          onChange={event =>
                             handleInputDiagChange(diagIndex, event)
                           }
                           name="certainty"
@@ -908,7 +910,7 @@ const Widget = (props) => {
                 <Label
                   as="a"
                   color="teal"
-                  style={{ width: "100%", height: "35px", fontSize: "16px" }}
+                  style={{ width: "100%", fontSize: "1em" }}
                 >
                   Laboratory Test Orders
                 </Label>
@@ -935,22 +937,20 @@ const Widget = (props) => {
                           <Table.Cell>
                             <select
                               style={{
-                                borderRadius: "0px",
-                                fontSize: "14px",
+                                borderRadius: 0,
+                                fontSize: ".8em",
                                 color: "#000",
                               }}
                               className="ui fluid selection dropdown"
                               value={labInputField.labOrder}
-                              onChange={(e) =>
-                                handleInputLabChange(labIndex, e)
-                              }
+                              onChange={e => handleInputLabChange(labIndex, e)}
                               name="labOrder"
                               id="labOrder"
                             >
                               <option>Select</option>
                               {labGroups
-                                .filter((e) => e.groupName !== "Others")
-                                .map((d) => (
+                                .filter(e => e.groupName !== "Others")
+                                .map(d => (
                                   <option
                                     key={d.id}
                                     value={`${d.id}-${d.groupName}`}
@@ -963,26 +963,24 @@ const Widget = (props) => {
                           <Table.Cell>
                             <select
                               style={{
-                                borderRadius: "0px",
-                                fontSize: "14px",
+                                borderRadius: 0,
+                                fontSize: ".8em",
                                 color: "#000",
                               }}
                               className="ui fluid selection dropdown"
                               value={labInputField.labTest}
-                              onChange={(e) =>
-                                handleInputLabChange(labIndex, e)
-                              }
+                              onChange={e => handleInputLabChange(labIndex, e)}
                               name="labTest"
                               id="labTest"
                             >
                               <option>Select</option>
                               {labInputField.labTest === ""
-                                ? labTests.map((d) => (
+                                ? labTests.map(d => (
                                     <option key={d.id} value={d.id}>
                                       {d.labTestName}
                                     </option>
                                   ))
-                                : prevTests.map((d) => (
+                                : prevTests.map(d => (
                                     <option key={d.id} value={d.id}>
                                       {d.labTestName}
                                     </option>
@@ -992,20 +990,18 @@ const Widget = (props) => {
                           <Table.Cell>
                             <select
                               style={{
-                                borderRadius: "0px",
-                                fontSize: "14px",
+                                borderRadius: 0,
+                                fontSize: ".8em",
                                 color: "#000",
                               }}
                               className="ui fluid selection dropdown"
                               value={labInputField.priority}
-                              onChange={(e) =>
-                                handleInputLabChange(labIndex, e)
-                              }
+                              onChange={e => handleInputLabChange(labIndex, e)}
                               name="priority"
                               id="priority"
                             >
                               <option>Select</option>
-                              {priorities.map((d) => (
+                              {priorities.map(d => (
                                 <option key={d.id} value={d.id}>
                                   {d.display}
                                 </option>
@@ -1021,7 +1017,7 @@ const Widget = (props) => {
                     <Table.Row>
                       <Table.HeaderCell>
                         <Button
-                          color="blue"
+                          color="teal"
                           size="tiny"
                           type="button"
                           onClick={handleAddFieldsLab}
@@ -1049,7 +1045,7 @@ const Widget = (props) => {
             <Label
               as="a"
               color="purple"
-              style={{ width: "100%", height: "35px", fontSize: "16px" }}
+              style={{ width: "100%", fontSize: "1em" }}
             >
               Pharmacy Orders
             </Label>
@@ -1067,7 +1063,7 @@ const Widget = (props) => {
                       color="blue"
                       size="tiny"
                       onClick={() => handleEditPharmacyOrder(pharmacy)}
-                      style={{ marginLeft: "10px", cursor: "pointer" }}
+                      style={{ marginLeft: "2%", cursor: "pointer" }}
                     >
                       <Icon name="eye" /> View
                     </Label>{" "}
@@ -1091,16 +1087,14 @@ const Widget = (props) => {
             <br />
             {isPharmacyEnabled && (
               <div className="mb-3">
-                <ButtonMui
+                <Button
                   variant="contained"
-                  color="primary"
-                  className="ms-2"
+                  color="purple"
                   onClick={handleAddPharmacyOrder}
+                  style={{ textTransform: "capitalize" }}
                 >
-                  <span style={{ textTransform: "capitalize" }}>
-                    Add Medication Prescription
-                  </span>
-                </ButtonMui>
+                  Add Medication Prescription
+                </Button>
               </div>
             )}
 
@@ -1108,7 +1102,7 @@ const Widget = (props) => {
             <Label
               as="a"
               color="blue"
-              style={{ width: "100%", height: "35px", fontSize: "16px" }}
+              style={{ width: "100%", fontSize: "1em" }}
             >
               Documentation
             </Label>

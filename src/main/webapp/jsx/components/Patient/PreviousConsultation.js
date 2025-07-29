@@ -1,14 +1,17 @@
-import React, { Fragment, useState, useEffect } from 'react';
-import PerfectScrollbar from 'react-perfect-scrollbar';
-import { Card, Accordion } from 'react-bootstrap';
-import { useHistory } from 'react-router-dom';
-import 'react-widgets/dist/css/react-widgets.css';
-import { Modal } from 'react-bootstrap';
-import { Button, Grid } from 'semantic-ui-react';
-import { useConsultationsByPatientId } from '../../../hooks/useConsultationsByPatientId';
-import { useSortedVisitsByDate } from '../../../hooks/useSortedVisitsByDate';
-import PatientCardDetail from './PatientCard';
-import VisitDetailsTimeline from './VisitDetailsTimeline';
+import React, { Fragment, useState, useEffect } from "react";
+import PerfectScrollbar from "react-perfect-scrollbar";
+import { Card, Accordion } from "react-bootstrap";
+import { useHistory } from "react-router-dom";
+import "react-widgets/dist/css/react-widgets.css";
+import { Grid } from "semantic-ui-react";
+import { useConsultationsByPatientId } from "../../../hooks/useConsultationsByPatientId";
+import { useSortedVisitsByDate } from "../../../hooks/useSortedVisitsByDate";
+import PatientCardDetail from "./PatientCard";
+import VisitDetailsTimeline from "./VisitDetailsTimeline";
+import { useAddConsultationDrugOrders } from "../../../hooks/useAddConsultationDrugOrders";
+import { useDrugOrdersByPatientId } from "../../../hooks/useDrugOrdersByPatientId";
+import { useLabOrdersByPatientId } from "../../../hooks/useLabOrdersByPatientId";
+import { useAddConsultationLabOrders } from "../../../hooks/useAddConsultationLabOrders";
 
 function PreviousConsultation(props) {
   let history = useHistory();
@@ -30,13 +33,34 @@ function PreviousConsultation(props) {
   const {
     consultations,
     loading: loadingConsultations,
-    error,
-  } = useConsultationsByPatientId(patientObj.patientId);
-  const sortedEncountersByDate = useSortedVisitsByDate(consultations);
+    error: consultationError,
+  } = useConsultationsByPatientId(patientObj?.patientId);
+  const {
+    drugOrders,
+    loading: loadingDrugOrders,
+    error: drugOrderErrors,
+  } = useDrugOrdersByPatientId(patientObj?.patientId);
+  const {
+    labOrders,
+    loading: loadingLabOrders,
+    error: labOrderErrors,
+  } = useLabOrdersByPatientId(patientObj?.patientId);
+
+  const consulationsWithDrugOrders = useAddConsultationDrugOrders(
+    consultations,
+    drugOrders
+  );
+  const consulationsWithDrugAndLabOrders = useAddConsultationLabOrders(
+    consulationsWithDrugOrders,
+    labOrders
+  );
+  const sortedEncountersByDate = useSortedVisitsByDate(
+    consulationsWithDrugAndLabOrders
+  );
 
   const activityName = name => {
     const activityMapping = {
-      consultation: 'Consultation',
+      consultation: "Consultation",
     };
     return activityMapping[name];
   };
@@ -60,14 +84,14 @@ function PreviousConsultation(props) {
           <div className="card rounded-0">
             <div className="card-header  border-0 pb-0">
               <h4 className="card-title">
-                <b>Consultations</b>{' '}
+                <b>Consultations</b>{" "}
               </h4>
             </div>
             <div className="card-body">
               {loadingRecent !== false ? (
                 <>
                   <PerfectScrollbar
-                    style={{ height: '370px' }}
+                    style={{ height: "370px" }}
                     id="DZ_W_Todo1"
                     className="widget-media dz-scroll ps ps--active-y"
                   >
@@ -77,7 +101,6 @@ function PreviousConsultation(props) {
                     >
                       <>
                         {sortedEncountersByDate.map((encounter, i) => {
-                          console.log('encounter: ', encounter);
                           return (
                             <div
                               className="accordion-item"
@@ -88,8 +111,8 @@ function PreviousConsultation(props) {
                                 eventKey={`${i}`}
                                 className={`accordion-header ${
                                   activeAccordionHeaderShadow === i
-                                    ? ''
-                                    : 'collapsed'
+                                    ? ""
+                                    : "collapsed"
                                 } accordion-header-info`}
                                 onClick={() =>
                                   setActiveAccordionHeaderShadow(
@@ -99,8 +122,8 @@ function PreviousConsultation(props) {
                               >
                                 <span className="accordion-header-icon"></span>
                                 <span className="accordion-header-text">
-                                  Visit Date :{' '}
-                                  <span className="">{encounter.date}</span>{' '}
+                                  Visit Date :{" "}
+                                  <span className="">{encounter.date}</span>{" "}
                                 </span>
                                 <span className="accordion-header-indicator"></span>
                               </Accordion.Toggle>
@@ -122,15 +145,15 @@ function PreviousConsultation(props) {
                                             <div
                                               className={
                                                 id % 2 == 0
-                                                  ? 'media me-2 media-info'
-                                                  : 'media me-2 media-success'
+                                                  ? "media me-2 media-info"
+                                                  : "media me-2 media-success"
                                               }
                                             >
                                               OPD
                                             </div>
                                             <div className="media-body">
                                               <h5 className="mb-1">
-                                                {activityName('consultation')}{' '}
+                                                {activityName("consultation")}{" "}
                                               </h5>
                                               <small className="d-block">
                                                 {encounter.date}
@@ -170,7 +193,7 @@ function PreviousConsultation(props) {
                   {loadingLab !== false ? (
                     <>
                       <PerfectScrollbar
-                        style={{ height: '370px' }}
+                        style={{ height: "370px" }}
                         id="DZ_W_TimeLine"
                         className="widget-timeline dz-scroll height370 ps ps--active-y"
                       >

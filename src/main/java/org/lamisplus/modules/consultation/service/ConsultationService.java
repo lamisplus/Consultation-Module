@@ -17,10 +17,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import liquibase.pro.packaged.c;
+import liquibase.pro.packaged.cO;
+
 import javax.transaction.Transactional;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-
 
 @Service
 @Slf4j
@@ -30,12 +34,11 @@ public class ConsultationService {
     private ConsultationRepository repository;
     private final ConsultationMapper mapper;
 
-
-
     @Transactional
     public ConsultationDTO save(ConsultationDTO consultationDTO) {
         Consultation consultation = mapper.toConsultation(consultationDTO);
 
+        validateOnsetDate(consultation);
 
         if (consultation.getPresentingComplaints() != null) {
             consultation.getPresentingComplaints()
@@ -54,39 +57,32 @@ public class ConsultationService {
         return mapper.toConsultationDto(repository.save(consultation));
     }
 
-
-
-
     public ConsultationDTO findById(int id) {
         try {
             Consultation consultation = repository.findById(id).orElse(null);
-            return consultation != null ?
-                    mapper.toConsultationDto(consultation) :
-                    null;
+            return consultation != null ? mapper.toConsultationDto(consultation) : null;
         } catch (Exception e) {
             log.error("Error finding consultation with ID: {}", id, e);
             return null;
         }
     }
 
-
-
     public List<ConsultationDTO> getAllEncountersByPatientId(int patientId) {
         List<Consultation> consultations = repository.findByPatientIdWithDetails(patientId);
         return mapper.toConsultationDtoList(consultations);
     }
 
-
-//   public Page<ConsultationDTO> getAllConsultations(int page, int size, String sortBy, String sortDir) {
-//        Sort sort = sortDir.equalsIgnoreCase("asc")
-//                ? Sort.by(sortBy).ascending()
-//                : Sort.by(sortBy).descending();
-//
-//        Pageable pageable = PageRequest.of(page, size, sort);
-//        Page<Consultation> consultationPage = repository.findAll(pageable);
-//
-//        return consultationPage.map(mapper::toConsultationDto);
-//    }
+    // public Page<ConsultationDTO> getAllConsultations(int page, int size, String
+    // sortBy, String sortDir) {
+    // Sort sort = sortDir.equalsIgnoreCase("asc")
+    // ? Sort.by(sortBy).ascending()
+    // : Sort.by(sortBy).descending();
+    //
+    // Pageable pageable = PageRequest.of(page, size, sort);
+    // Page<Consultation> consultationPage = repository.findAll(pageable);
+    //
+    // return consultationPage.map(mapper::toConsultationDto);
+    // }
 
     public Page<PatientConsultationProjection> searchPatientWithConsultation(String keyword, Pageable pageable) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -94,7 +90,6 @@ public class ConsultationService {
         }
         return repository.findByPatientIdWithConsultation(keyword.trim(), pageable);
     }
-
 
     public List<ConsultationDTO> getAllConsultationsByVisitId(int visitId) {
         List<Consultation> consultations = repository.findAllByVisitIdWithDetails(visitId);
@@ -115,7 +110,6 @@ public class ConsultationService {
         }
     }
 
-
     @Transactional
     public ConsultationDTO update(int id, ConsultationDTO consultationDTO) {
 
@@ -124,6 +118,8 @@ public class ConsultationService {
 
         Consultation updatedConsultation = mapper.toConsultation(consultationDTO);
 
+        validateOnsetDate(updatedConsultation);
+
         updatedConsultation.setId(id);
         updatedConsultation.setUuid(existingConsultation.getUuid());
 
@@ -131,11 +127,8 @@ public class ConsultationService {
 
         Consultation savedConsultation = repository.save(updatedConsultation);
 
-
         return mapper.toConsultationDto(savedConsultation);
     }
-
-
 
     private void updateChildEntities(Consultation existing, Consultation updated) {
 
@@ -150,7 +143,6 @@ public class ConsultationService {
             }
         }
 
-
         if (updated.getDiagnosisList() != null) {
 
             existing.getDiagnosisList().clear();
@@ -162,6 +154,18 @@ public class ConsultationService {
         }
     }
 
+    private void validateOnsetDate(Consultation consultation) {
+        LocalDate dateOfBirth = repository.findPatientDateOfBirthByPatientId(consultation.getPatientId());
 
+        if (consultation.getPresentingComplaints() != null) {
+            for (PresentingComplaint complaint : consultation.getPresentingComplaints()) {
+                if (complaint.getComplaint() != null && complaint.getOnsetDate().isBefore(dateOfBirth)) {
+                    throw new IllegalArgumentException(
+                            "Diagnosis onset date cannot be before patient's date of birth.");
+                }
+                complaint.setConsultation(consultation);
+            }
+        }
+    }
 
 }

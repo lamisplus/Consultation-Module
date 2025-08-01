@@ -1,31 +1,24 @@
-import React, { Fragment, useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
-  Form,
-  Row,
   Card,
   CardBody,
   FormGroup,
   Label,
   Input,
   InputGroup,
-  InputGroupText,
 } from "reactstrap";
 import MatButton from "@material-ui/core/Button";
-import { makeStyles } from "@material-ui/core/styles";
 import SaveIcon from "@material-ui/icons/Save";
 import CancelIcon from "@material-ui/icons/Cancel";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { token, url as baseUrl, apiUrl as apiUrl } from "../../../api";
-import { useHistory } from "react-router-dom";
 import { Modal, Button } from "react-bootstrap";
-import { format } from "date-fns";
-
-import "react-summernote/dist/react-summernote.css"; // import styles
+import { format, parseISO } from "date-fns";
+import "react-summernote/dist/react-summernote.css";
 import { Spinner } from "reactstrap";
 import useMedicationValidation from "../../../hooks/useMedicationValidation";
 import usePharmacyOrderStyles from "../../../hooks/usePharmacyOrderStyles";
-import * as moment from "moment";
 
 const AddPharmacyOrder = props => {
   const patientObj = props.patientObj;
@@ -34,6 +27,7 @@ const AddPharmacyOrder = props => {
   const [drugs, setDrugs] = useState([]);
   const [dosageUnits, setDosageUnits] = useState([]);
   const [durationUnits, setDurationUnits] = useState([]);
+
   const [pharmacyOrder, setPharmacyOrder] = useState({
     encounterDate: format(new Date(props.encounterDate), "yyyy-MM-dd"),
     medicationName: "",
@@ -52,6 +46,7 @@ const AddPharmacyOrder = props => {
     drugBrandName: "",
     visitId: patientObj.visitId,
   });
+
   const [errors, setErrors] = useState({});
   const { initializeErrors, validate } = useMedicationValidation(
     pharmacyOrder,
@@ -59,43 +54,99 @@ const AddPharmacyOrder = props => {
     setErrors
   );
 
+  // Update form when editPharmacyOrderValue changes
+  useEffect(() => {
+    if (props.editPharmacyOrderValue) {
+      const order = props.editPharmacyOrderValue;
+      const encounterDate = order.encounterDate
+        ? format(parseISO(order.encounterDate), "yyyy-MM-dd")
+        : format(new Date(props.encounterDate), "yyyy-MM-dd");
+      const startDate = order.startDate
+        ? format(parseISO(order.startDate), "yyyy-MM-dd")
+        : "";
+      setPharmacyOrder({
+        ...order,
+        encounterDate,
+        startDate,
+      });
+    }
+  }, [props.editPharmacyOrderValue, props.encounterDate]);
+
+  // Reset form on unmount
+  useEffect(() => {
+    return () => {
+      setPharmacyOrder({
+        encounterDate: format(new Date(props.encounterDate), "yyyy-MM-dd"),
+        medicationName: "",
+        formulation: "",
+        routeOfAdmin: "",
+        timingInstructions: "",
+        quantityPrescribed: "",
+        strength: "",
+        strengthUnit: "",
+        frequency: "",
+        startDate: "",
+        duration: "",
+        durationUnit: "",
+        notes: "",
+        patientId: patientObj.id,
+        drugBrandName: "",
+        visitId: patientObj.visitId,
+      });
+    };
+  }, [props.encounterDate, patientObj.id, patientObj.visitId]);
+
   const handleInputChangePharmacyOrderDto = e => {
     setErrors(prev => ({ ...prev, [e.target.name]: "" }));
     setPharmacyOrder({ ...pharmacyOrder, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async e => {
+    e.preventDefault();
     if (validate(pharmacyOrder)) {
       try {
-        e.preventDefault();
         setSaving(true);
-
-        pharmacyOrder.encounterDate = format(
-          new Date(props.encounterDate),
-          "yyyy-MM-dd'T'HH:mm:ss"
-        );
-
-        pharmacyOrder.startDate = format(
-          new Date(pharmacyOrder.startDate),
-          "yyyy-MM-dd'T'HH:mm:ss"
-        );
-
-        await axios
-          .post(`${baseUrl}drug-orders/order`, pharmacyOrder, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          .then(resp => {
-            console.log("drug saved");
-            toast.success("Successfully Saved drug order!", {
-              position: toast.POSITION.TOP_RIGHT,
+        const cleanEncounterDate = pharmacyOrder.encounterDate.split("T")[0];
+        const cleanStartDate = pharmacyOrder.startDate
+          ? pharmacyOrder.startDate.split("T")[0]
+          : "";
+        const payload = {
+          ...pharmacyOrder,
+          encounterDate: `${cleanEncounterDate}T00:00:00`,
+          startDate: cleanStartDate ? `${cleanStartDate}T00:00:00` : null,
+        };
+        if (pharmacyOrder.id) {
+          await axios
+            .put(`${baseUrl}drug-orders/update/${pharmacyOrder.id}`, payload, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            .then(resp => {
+              console.log("drug updated successfully", resp);
+              toast.success("Successfully Updated drug order!", {
+                position: toast.POSITION.TOP_RIGHT,
+              });
             });
-          });
+        } else {
+          await axios
+            .post(`${baseUrl}drug-orders/order`, payload, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            .then(resp => {
+              props.setPharmacyOrder(prev => [...prev, resp.data]);
+              toast.success("Successfully Saved drug order!", {
+                position: toast.POSITION.TOP_RIGHT,
+              });
+            });
+        }
+
         setSaving(false);
         props.toggle();
       } catch (e) {
+        console.error("Error saving drug order:", e);
         toast.error("An error occurred while saving drug prescription", {
           position: toast.POSITION.TOP_RIGHT,
         });
+        setSaving(false);
       }
     }
   };
@@ -122,7 +173,7 @@ const AddPharmacyOrder = props => {
       );
       setDurationUnits(response.data);
     } catch (e) {
-      toast.error("An error occurred while fetching DOSE STRENGTH UNIT", {
+      toast.error("An error occurred while fetching DURATION UNIT", {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
@@ -133,7 +184,7 @@ const AddPharmacyOrder = props => {
       const response = await axios.get(`${baseUrl}drugs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.data[0].id > 0) {
+      if (response.data?.length > 0 && response.data[0].id > 0) {
         setDrugs(response.data);
       }
     } catch (e) {
@@ -149,32 +200,32 @@ const AddPharmacyOrder = props => {
     loadDurationUnits();
   }, [loadPharmacyDrugs, loadDosageUnits, loadDurationUnits]);
 
-  let drugRows = null;
-  let dosageUnitsRows = null;
-  let durationUnitsRows = null;
-  if (drugs && drugs.length > 0) {
-    drugRows = drugs.map((drug, index) => (
-      <option key={drug.name} value={drug.name}>
-        {drug.name}
-      </option>
-    ));
-  }
+  const drugRows =
+    drugs?.length > 0
+      ? drugs.map(drug => (
+          <option key={drug.name} value={drug.name}>
+            {drug.name}
+          </option>
+        ))
+      : null;
 
-  if (dosageUnits && dosageUnits.length > 0) {
-    dosageUnitsRows = dosageUnits.map((dosageUnit, index) => (
-      <option key={dosageUnit.display} value={dosageUnit.display}>
-        {dosageUnit.display}
-      </option>
-    ));
-  }
-  if (durationUnits && durationUnits.length > 0) {
-    durationUnitsRows = durationUnits.map((durationUnit, index) => (
-      <option key={durationUnit.display} value={durationUnit.display}>
-        {durationUnit.display}
-      </option>
-    ));
-  }
-  console.log("useMedicationValidation: ", { errors, validate });
+  const dosageUnitsRows =
+    dosageUnits?.length > 0
+      ? dosageUnits.map(unit => (
+          <option key={unit.display} value={unit.display}>
+            {unit.display}
+          </option>
+        ))
+      : null;
+
+  const durationUnitsRows =
+    durationUnits?.length > 0
+      ? durationUnits.map(unit => (
+          <option key={unit.display} value={unit.display}>
+            {unit.display}
+          </option>
+        ))
+      : null;
 
   return (
     <div>
@@ -199,8 +250,9 @@ const AddPharmacyOrder = props => {
           <Card>
             <CardBody>
               <form>
+                {/* Encounter Date */}
                 <div className="row">
-                  <div className="form-group  mb-3">
+                  <div className="form-group mb-3">
                     <FormGroup>
                       <Label className={classes.label}>Encounter Date</Label>
                       <InputGroup>
@@ -210,24 +262,20 @@ const AddPharmacyOrder = props => {
                           id="encounterDate"
                           className={classes.input}
                           onFocus={initializeErrors}
-                          onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.encounterDate}
                           disabled
                         />
                       </InputGroup>
                     </FormGroup>
-                    <div>
-                      {errors.encounterDate !== "" ? (
-                        <span className={classes.error}>
-                          {errors.encounterDate}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.encounterDate && (
+                      <span className={classes.error}>
+                        {errors.encounterDate}
+                      </span>
+                    )}
                   </div>
                 </div>
 
+                {/* Medication Details */}
                 <div className="row">
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
@@ -242,7 +290,7 @@ const AddPharmacyOrder = props => {
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.medicationName}
                         >
-                          <option value={""}></option>
+                          <option value=""></option>
                           {drugRows}
                         </Input>
                         <span
@@ -254,21 +302,17 @@ const AddPharmacyOrder = props => {
                             transform: "scale(2)",
                           }}
                         >
-                          {" "}
-                          &#129171;
+                          ▼
                         </span>
                       </InputGroup>
                     </FormGroup>
-                    <div>
-                      {errors.medicationName !== "" ? (
-                        <span className={classes.error}>
-                          {errors.medicationName}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.medicationName && (
+                      <span className={classes.error}>
+                        {errors.medicationName}
+                      </span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Formulation</Label>
@@ -284,16 +328,13 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-                    <div>
-                      {errors.formulation !== "" ? (
-                        <span className={classes.error}>
-                          {errors.formulation}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.formulation && (
+                      <span className={classes.error}>
+                        {errors.formulation}
+                      </span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Route of Admin</Label>
@@ -309,17 +350,13 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.routeOfAdmin !== "" ? (
-                        <span className={classes.error}>
-                          {errors.routeOfAdmin}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.routeOfAdmin && (
+                      <span className={classes.error}>
+                        {errors.routeOfAdmin}
+                      </span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Medication Time</Label>
@@ -335,17 +372,13 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.timingInstructions !== "" ? (
-                        <span className={classes.error}>
-                          {errors.timingInstructions}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.timingInstructions && (
+                      <span className={classes.error}>
+                        {errors.timingInstructions}
+                      </span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>
@@ -362,18 +395,14 @@ const AddPharmacyOrder = props => {
                           value={pharmacyOrder.quantityPrescribed}
                         />
                       </InputGroup>
-
-                      <div>
-                        {errors.quantityPrescribed !== "" ? (
-                          <span className={classes.error}>
-                            {errors.quantityPrescribed}
-                          </span>
-                        ) : (
-                          ""
-                        )}
-                      </div>
                     </FormGroup>
+                    {errors.quantityPrescribed && (
+                      <span className={classes.error}>
+                        {errors.quantityPrescribed}
+                      </span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Strength</Label>
@@ -389,15 +418,11 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.strength !== "" ? (
-                        <span className={classes.error}>{errors.strength}</span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.strength && (
+                      <span className={classes.error}>{errors.strength}</span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Dosage (Amount)</Label>
@@ -411,7 +436,7 @@ const AddPharmacyOrder = props => {
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.strengthUnit}
                         >
-                          <option value={""}></option>
+                          <option value=""></option>
                           {dosageUnitsRows}
                         </Input>
                         <span
@@ -423,24 +448,19 @@ const AddPharmacyOrder = props => {
                             transform: "scale(2)",
                           }}
                         >
-                          {" "}
-                          &#129171;
+                          ▼
                         </span>
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.strengthUnit !== "" ? (
-                        <span className={classes.error}>
-                          {errors.strengthUnit}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.strengthUnit && (
+                      <span className={classes.error}>
+                        {errors.strengthUnit}
+                      </span>
+                    )}
                   </div>
                 </div>
 
+                {/* Brand Name */}
                 <div className="row">
                   <div className="form-group mb-3">
                     <FormGroup>
@@ -457,19 +477,15 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.drugBrandName !== "" ? (
-                        <span className={classes.error}>
-                          {errors.drugBrandName}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.drugBrandName && (
+                      <span className={classes.error}>
+                        {errors.drugBrandName}
+                      </span>
+                    )}
                   </div>
                 </div>
 
+                {/* Frequency, Start Date, Duration */}
                 <div className="row">
                   <div className="form-group mb-3 col-md-6">
                     <FormGroup>
@@ -486,17 +502,11 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.frequency !== "" ? (
-                        <span className={classes.error}>
-                          {errors.frequency}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.frequency && (
+                      <span className={classes.error}>{errors.frequency}</span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-6">
                     <FormGroup>
                       <Label className={classes.label}>Start Date</Label>
@@ -506,27 +516,22 @@ const AddPharmacyOrder = props => {
                           type="date"
                           name="startDate"
                           id="startDate"
-                          min={moment(pharmacyOrder.encounterDate).format(
-                            "YYYY-MM-DD"
+                          min={format(
+                            new Date(props.encounterDate),
+                            "yyyy-MM-dd"
                           )}
-                          max={moment(new Date()).format("YYYY-MM-DD")}
+                          max={format(new Date(), "yyyy-MM-dd")}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.startDate}
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.startDate !== "" ? (
-                        <span className={classes.error}>
-                          {errors.startDate}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.startDate && (
+                      <span className={classes.error}>{errors.startDate}</span>
+                    )}
                   </div>
+
                   <div className="form-group mb-3 col-md-6">
                     <FormGroup>
                       <Label className={classes.label}>Duration</Label>
@@ -542,14 +547,9 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.duration !== "" ? (
-                        <span className={classes.error}>{errors.duration}</span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.duration && (
+                      <span className={classes.error}>{errors.duration}</span>
+                    )}
                   </div>
 
                   <div className="form-group mb-3 col-md-6">
@@ -565,7 +565,7 @@ const AddPharmacyOrder = props => {
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.durationUnit}
                         >
-                          <option value={""}></option>
+                          <option value=""></option>
                           {durationUnitsRows}
                         </Input>
                         <span
@@ -577,24 +577,19 @@ const AddPharmacyOrder = props => {
                             transform: "scale(2)",
                           }}
                         >
-                          {" "}
-                          &#129171;
+                          ▼
                         </span>
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.durationUnit !== "" ? (
-                        <span className={classes.error}>
-                          {errors.durationUnit}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.durationUnit && (
+                      <span className={classes.error}>
+                        {errors.durationUnit}
+                      </span>
+                    )}
                   </div>
                 </div>
 
+                {/* Notes */}
                 <div className="row">
                   <div className="form-group mb-3">
                     <FormGroup>
@@ -616,14 +611,9 @@ const AddPharmacyOrder = props => {
                         />
                       </InputGroup>
                     </FormGroup>
-
-                    <div>
-                      {errors.notes !== "" ? (
-                        <span className={classes.error}>{errors.notes}</span>
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                    {errors.notes && (
+                      <span className={classes.error}>{errors.notes}</span>
+                    )}
                   </div>
                 </div>
 
@@ -638,13 +628,7 @@ const AddPharmacyOrder = props => {
                   startIcon={<SaveIcon />}
                   onClick={handleSubmit}
                 >
-                  {!saving ? (
-                    <span style={{ textTransform: "capitalize" }}>Save</span>
-                  ) : (
-                    <span style={{ textTransform: "capitalize" }}>
-                      Saving...
-                    </span>
-                  )}
+                  {!saving ? "Save" : "Saving..."}
                 </MatButton>
 
                 <MatButton
@@ -653,7 +637,7 @@ const AddPharmacyOrder = props => {
                   startIcon={<CancelIcon />}
                   onClick={props.toggle}
                 >
-                  <span style={{ textTransform: "capitalize" }}>Cancel</span>
+                  Cancel
                 </MatButton>
               </form>
             </CardBody>

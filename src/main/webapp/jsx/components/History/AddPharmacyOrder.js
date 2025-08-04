@@ -299,7 +299,6 @@ const AddPharmacyOrder = props => {
                             top: "1.3em",
                             right: "6%",
                             zIndex: 100,
-                            transform: "scale(2)",
                           }}
                         >
                           ▼
@@ -442,10 +441,9 @@ const AddPharmacyOrder = props => {
                         <span
                           style={{
                             position: "absolute",
-                            top: "1.3em",
+                            top: ".7em",
                             right: "6%",
                             zIndex: 100,
-                            transform: "scale(2)",
                           }}
                         >
                           ▼
@@ -571,10 +569,9 @@ const AddPharmacyOrder = props => {
                         <span
                           style={{
                             position: "absolute",
-                            top: "1.3em",
+                            top: ".7em",
                             right: "6%",
                             zIndex: 100,
-                            transform: "scale(2)",
                           }}
                         >
                           ▼

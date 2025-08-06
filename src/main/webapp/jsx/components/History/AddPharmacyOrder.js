@@ -12,9 +12,10 @@ import SaveIcon from "@material-ui/icons/Save";
 import CancelIcon from "@material-ui/icons/Cancel";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { token, url as baseUrl } from "../../../api";
+import { token, url as baseUrl, apiUrl as apiUrl } from "../../../api";
 import { Modal, Button } from "react-bootstrap";
 import { format, parseISO } from "date-fns";
+import "react-summernote/dist/react-summernote.css";
 import { Spinner } from "reactstrap";
 import useMedicationValidation from "../../../hooks/useMedicationValidation";
 import usePharmacyOrderStyles from "../../../hooks/usePharmacyOrderStyles";
@@ -26,10 +27,7 @@ const AddPharmacyOrder = props => {
   const [drugs, setDrugs] = useState([]);
   const [dosageUnits, setDosageUnits] = useState([]);
   const [durationUnits, setDurationUnits] = useState([]);
-  const [errors, setErrors] = useState({});
-
-  // Define initial state as a function to avoid duplication
-  const getInitialPharmacyOrder = () => ({
+  const [pharmacyOrder, setPharmacyOrder] = useState({
     encounterDate: format(new Date(props.encounterDate), "yyyy-MM-dd"),
     medicationName: "",
     formulation: "",
@@ -47,50 +45,59 @@ const AddPharmacyOrder = props => {
     drugBrandName: "",
     visitId: patientObj.visitId,
   });
-
-  const [pharmacyOrder, setPharmacyOrder] = useState(getInitialPharmacyOrder());
-
+  const [errors, setErrors] = useState({});
   const { initializeErrors, validate } = useMedicationValidation(
     pharmacyOrder,
     errors,
     setErrors
   );
 
-  // Reset form when modal is opened in "add" mode
+  // Update form when editPharmacyOrderValue changes
   useEffect(() => {
-    if (props.showModal && props.isAddmedication) {
-      setPharmacyOrder(getInitialPharmacyOrder());
-      setErrors({});
-    }
-  }, [props.showModal, props.isAddmedication, props.encounterDate]);
-
-  // Populate form when editing
-  useEffect(() => {
-    if (
-      props.showModal &&
-      !props.isAddmedication &&
-      props.editPharmacyOrderValue
-    ) {
+    if (!props.isAddmedication && props.editPharmacyOrderValue) {
       const order = props.editPharmacyOrderValue;
       const encounterDate = order?.encounterDate
-        ? format(parseISO(order.encounterDate), "yyyy-MM-dd")
+        ? format(parseISO(order?.encounterDate), "yyyy-MM-dd")
         : format(new Date(props.encounterDate), "yyyy-MM-dd");
       const startDate = order?.startDate
-        ? format(parseISO(order.startDate), "yyyy-MM-dd")
+        ? format(parseISO(order?.startDate), "yyyy-MM-dd")
         : "";
       setPharmacyOrder({
         ...order,
         encounterDate,
         startDate,
       });
-      setErrors({});
     }
   }, [
-    props.showModal,
-    props.isAddmedication,
     props.editPharmacyOrderValue,
     props.encounterDate,
+    props.isAddmedication,
   ]);
+
+  // Reset form when adding new
+  useEffect(() => {
+    if (props.isAddmedication && props.showModal) {
+      setPharmacyOrder({
+        encounterDate: format(new Date(props.encounterDate), "yyyy-MM-dd"),
+        medicationName: "",
+        formulation: "",
+        routeOfAdmin: "",
+        timingInstructions: "",
+        quantityPrescribed: "",
+        strength: "",
+        strengthUnit: "",
+        frequency: "",
+        startDate: "",
+        duration: "",
+        durationUnit: "",
+        notes: "",
+        patientId: patientObj.id,
+        drugBrandName: "",
+        visitId: patientObj.visitId,
+      });
+      setErrors({});
+    }
+  }, [props.isAddmedication, props.showModal, props.encounterDate, patientObj]);
 
   const handleInputChangePharmacyOrderDto = e => {
     setErrors(prev => ({ ...prev, [e.target.name]: "" }));
@@ -114,12 +121,18 @@ const AddPharmacyOrder = props => {
         };
 
         if (pharmacyOrder.id) {
-          await axios.put(
+          const response = await axios.put(
             `${baseUrl}drug-orders/update/${pharmacyOrder.id}`,
             payload,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
+          );
+          // Update the pharmacyOrder list in parent
+          props.setPharmacyOrder(prev =>
+            prev.map(order =>
+              order.id === pharmacyOrder.id ? response.data : order
+            )
           );
           toast.success("Successfully updated drug order!", {
             position: toast.POSITION.TOP_RIGHT,
@@ -133,7 +146,7 @@ const AddPharmacyOrder = props => {
             }
           );
           props.setPharmacyOrder(prev => [...prev, response.data]);
-          toast.success("Successfully saved new drug order!", {
+          toast.success("Successfully saved drug order!", {
             position: toast.POSITION.TOP_RIGHT,
           });
         }
@@ -227,9 +240,17 @@ const AddPharmacyOrder = props => {
 
   return (
     <div>
-      <Modal show={props.showModal} onHide={props.toggle} size="lg">
-        <Modal.Header style={{ backgroundColor: "#eeeeee" }}>
-          <Modal.Title>Medication Prescription</Modal.Title>
+      <Modal
+        show={props.showModal}
+        toggle={props.toggle}
+        className="fade"
+        size="lg"
+      >
+        <Modal.Header
+          toggle={props.toggle}
+          style={{ backgroundColor: "#eeeeee" }}
+        >
+          Medication Prescription
           <Button
             variant=""
             className="btn-close"
@@ -242,7 +263,7 @@ const AddPharmacyOrder = props => {
               <form onSubmit={handleSubmit}>
                 {/* Encounter Date */}
                 <div className="row">
-                  <div className="form-group mb-3 col-md-12">
+                  <div className="form-group mb-3">
                     <FormGroup>
                       <Label className={classes.label}>Encounter Date</Label>
                       <InputGroup>
@@ -256,15 +277,14 @@ const AddPharmacyOrder = props => {
                           disabled
                         />
                       </InputGroup>
-                      {errors.encounterDate && (
-                        <span className={classes.error}>
-                          {errors.encounterDate}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.encounterDate && (
+                      <span className={classes.error}>
+                        {errors.encounterDate}
+                      </span>
+                    )}
                   </div>
                 </div>
-
                 {/* Medication Details */}
                 <div className="row">
                   <div className="form-group mb-3 col-md-4">
@@ -272,10 +292,10 @@ const AddPharmacyOrder = props => {
                       <Label className={classes.label}>Medication Name</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="select"
                           name="medicationName"
                           id="medicationName"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.medicationName}
@@ -294,80 +314,76 @@ const AddPharmacyOrder = props => {
                           ▼
                         </span>
                       </InputGroup>
-                      {errors.medicationName && (
-                        <span className={classes.error}>
-                          {errors.medicationName}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.medicationName && (
+                      <span className={classes.error}>
+                        {errors.medicationName}
+                      </span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Formulation</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="text"
                           name="formulation"
                           id="formulation"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.formulation}
                         />
                       </InputGroup>
-                      {errors.formulation && (
-                        <span className={classes.error}>
-                          {errors.formulation}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.formulation && (
+                      <span className={classes.error}>
+                        {errors.formulation}
+                      </span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Route of Admin</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="text"
                           name="routeOfAdmin"
                           id="routeOfAdmin"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.routeOfAdmin}
                         />
                       </InputGroup>
-                      {errors.routeOfAdmin && (
-                        <span className={classes.error}>
-                          {errors.routeOfAdmin}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.routeOfAdmin && (
+                      <span className={classes.error}>
+                        {errors.routeOfAdmin}
+                      </span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Medication Time</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="text"
                           name="timingInstructions"
                           id="timingInstructions"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.timingInstructions}
                         />
                       </InputGroup>
-                      {errors.timingInstructions && (
-                        <span className={classes.error}>
-                          {errors.timingInstructions}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.timingInstructions && (
+                      <span className={classes.error}>
+                        {errors.timingInstructions}
+                      </span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>
@@ -375,52 +391,50 @@ const AddPharmacyOrder = props => {
                       </Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="text"
                           name="quantityPrescribed"
                           id="quantityPrescribed"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.quantityPrescribed}
                         />
                       </InputGroup>
-                      {errors.quantityPrescribed && (
-                        <span className={classes.error}>
-                          {errors.quantityPrescribed}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.quantityPrescribed && (
+                      <span className={classes.error}>
+                        {errors.quantityPrescribed}
+                      </span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Strength</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="text"
                           name="strength"
                           id="strength"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.strength}
                         />
                       </InputGroup>
-                      {errors.strength && (
-                        <span className={classes.error}>{errors.strength}</span>
-                      )}
                     </FormGroup>
+                    {errors.strength && (
+                      <span className={classes.error}>{errors.strength}</span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-4">
                     <FormGroup>
                       <Label className={classes.label}>Dosage (Amount)</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="select"
                           name="strengthUnit"
                           id="strengthUnit"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.strengthUnit}
@@ -431,7 +445,7 @@ const AddPharmacyOrder = props => {
                         <span
                           style={{
                             position: "absolute",
-                            top: "0.7em",
+                            top: ".7em",
                             right: "6%",
                             zIndex: 100,
                           }}
@@ -439,40 +453,38 @@ const AddPharmacyOrder = props => {
                           ▼
                         </span>
                       </InputGroup>
-                      {errors.strengthUnit && (
-                        <span className={classes.error}>
-                          {errors.strengthUnit}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.strengthUnit && (
+                      <span className={classes.error}>
+                        {errors.strengthUnit}
+                      </span>
+                    )}
                   </div>
                 </div>
-
                 {/* Brand Name */}
                 <div className="row">
-                  <div className="form-group mb-3 col-md-12">
+                  <div className="form-group mb-3">
                     <FormGroup>
                       <Label className={classes.label}>Brand Name</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="text"
                           name="drugBrandName"
                           id="drugBrandName"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.drugBrandName}
                         />
                       </InputGroup>
-                      {errors.drugBrandName && (
-                        <span className={classes.error}>
-                          {errors.drugBrandName}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.drugBrandName && (
+                      <span className={classes.error}>
+                        {errors.drugBrandName}
+                      </span>
+                    )}
                   </div>
                 </div>
-
                 {/* Frequency, Start Date, Duration */}
                 <div className="row">
                   <div className="form-group mb-3 col-md-6">
@@ -480,32 +492,29 @@ const AddPharmacyOrder = props => {
                       <Label className={classes.label}>Frequency</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="number"
                           name="frequency"
                           id="frequency"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.frequency}
                         />
                       </InputGroup>
-                      {errors.frequency && (
-                        <span className={classes.error}>
-                          {errors.frequency}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.frequency && (
+                      <span className={classes.error}>{errors.frequency}</span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-6">
                     <FormGroup>
                       <Label className={classes.label}>Start Date</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="date"
                           name="startDate"
                           id="startDate"
-                          className={classes.input}
                           min={format(
                             new Date(props.encounterDate),
                             "yyyy-MM-dd"
@@ -516,43 +525,39 @@ const AddPharmacyOrder = props => {
                           value={pharmacyOrder.startDate}
                         />
                       </InputGroup>
-                      {errors.startDate && (
-                        <span className={classes.error}>
-                          {errors.startDate}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.startDate && (
+                      <span className={classes.error}>{errors.startDate}</span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-6">
                     <FormGroup>
                       <Label className={classes.label}>Duration</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="number"
                           name="duration"
                           id="duration"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.duration}
                         />
                       </InputGroup>
-                      {errors.duration && (
-                        <span className={classes.error}>{errors.duration}</span>
-                      )}
                     </FormGroup>
+                    {errors.duration && (
+                      <span className={classes.error}>{errors.duration}</span>
+                    )}
                   </div>
-
                   <div className="form-group mb-3 col-md-6">
                     <FormGroup>
                       <Label className={classes.label}>Duration Unit</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="select"
                           name="durationUnit"
                           id="durationUnit"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.durationUnit}
@@ -563,7 +568,7 @@ const AddPharmacyOrder = props => {
                         <span
                           style={{
                             position: "absolute",
-                            top: "0.7em",
+                            top: ".7em",
                             right: "6%",
                             zIndex: 100,
                           }}
@@ -571,26 +576,25 @@ const AddPharmacyOrder = props => {
                           ▼
                         </span>
                       </InputGroup>
-                      {errors.durationUnit && (
-                        <span className={classes.error}>
-                          {errors.durationUnit}
-                        </span>
-                      )}
                     </FormGroup>
+                    {errors.durationUnit && (
+                      <span className={classes.error}>
+                        {errors.durationUnit}
+                      </span>
+                    )}
                   </div>
                 </div>
-
                 {/* Notes */}
                 <div className="row">
-                  <div className="form-group mb-3 col-md-12">
+                  <div className="form-group mb-3">
                     <FormGroup>
                       <Label className={classes.label}>Notes</Label>
                       <InputGroup>
                         <Input
+                          className={classes.input}
                           type="textarea"
                           name="notes"
                           id="notes"
-                          className={classes.input}
                           onFocus={initializeErrors}
                           onChange={handleInputChangePharmacyOrderDto}
                           value={pharmacyOrder.notes}
@@ -601,15 +605,13 @@ const AddPharmacyOrder = props => {
                           }}
                         />
                       </InputGroup>
-                      {errors.notes && (
-                        <span className={classes.error}>{errors.notes}</span>
-                      )}
                     </FormGroup>
+                    {errors.notes && (
+                      <span className={classes.error}>{errors.notes}</span>
+                    )}
                   </div>
                 </div>
-
-                {saving && <Spinner />}
-
+                {saving ? <Spinner /> : ""}
                 <br />
                 <MatButton
                   type="submit"
@@ -617,7 +619,6 @@ const AddPharmacyOrder = props => {
                   color="primary"
                   className={classes.button}
                   startIcon={<SaveIcon />}
-                  disabled={saving}
                 >
                   {!saving ? "Save" : "Saving..."}
                 </MatButton>
@@ -626,7 +627,6 @@ const AddPharmacyOrder = props => {
                   className={classes.button}
                   startIcon={<CancelIcon />}
                   onClick={props.toggle}
-                  disabled={saving}
                 >
                   Cancel
                 </MatButton>

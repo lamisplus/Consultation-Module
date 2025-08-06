@@ -7,21 +7,23 @@ export const DrugInfo = ({
   handleDelete,
   handleAddPharmacyOrder,
   i,
-}) => (
-  <div className="page-header" key={i}>
-    <Grid columns={4} verticalAlign="middle">
-      <Grid.Column width={5}>
-        <b>Medication:</b>
-        <br /> {pharmacy?.medicationName}
-      </Grid.Column>
+}) => {
+  console.log("order to edit: ", pharmacy);
+  return (
+    <div className="page-header" key={i}>
+      <Grid columns={4} verticalAlign="middle">
+        <Grid.Column width={5}>
+          <b>Medication:</b>
+          <br /> {pharmacy?.medicationName}
+        </Grid.Column>
 
-      <Grid.Column width={5}>
-        <b>Date Ordered:</b>
-        <br />
-        {moment(pharmacy?.prescriptionDate).format("YYYY-MM-DD h:mm A")}
-      </Grid.Column>
+        <Grid.Column width={5}>
+          <b>Date Ordered:</b>
+          <br />
+          {moment(pharmacy?.prescriptionDate).format("YYYY-MM-DD h:mm A")}
+        </Grid.Column>
 
-      {/* <Grid.Column width={3}>
+        {/* <Grid.Column width={3}>
         <Button
           color="primary"
           size="tiny"
@@ -32,17 +34,18 @@ export const DrugInfo = ({
         </Button>
       </Grid.Column> */}
 
-      <Grid.Column width={3}>
-        <Button
-          color="teal"
-          size="tiny"
-          type="button"
-          onClick={() => handleEditPharmacyOrder(pharmacy)}
-        >
-          <Icon name="edit" /> Edit
-        </Button>
-      </Grid.Column>
-    </Grid>
-    <hr />
-  </div>
-);
+        <Grid.Column width={3}>
+          <Button
+            color="teal"
+            size="tiny"
+            type="button"
+            onClick={() => handleEditPharmacyOrder(pharmacy)}
+          >
+            <Icon name="edit" /> Edit
+          </Button>
+        </Grid.Column>
+      </Grid>
+      <hr />
+    </div>
+  );
+};

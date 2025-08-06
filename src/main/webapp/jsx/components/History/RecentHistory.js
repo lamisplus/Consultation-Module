@@ -135,7 +135,7 @@ const Widget = props => {
   const [priorities, setPriorities] = useState([]);
   const [prevTests, setPrevTests] = useState([]);
   const [isAddmedication, setIsAddmedication] = useState(false);
-
+  console.log("pharmacyOrder: ", pharmacyOrder);
   // Edit pharmacy order state
   const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState(null);
 
@@ -224,8 +224,6 @@ const Widget = props => {
     }
   }, [patientObj.visitId]);
 
-  console.log("patientObj?.id: ", patientObj?.id);
-
   const [drugsOrdered, setDrugsOrdered] = useState([]);
 
   const fetchPatientDrugOrder = async patientId => {
@@ -244,7 +242,6 @@ const Widget = props => {
   };
 
   useEffect(() => fetchPatientDrugOrder(patientObj?.id), []);
-  console.log("orders: ", drugsOrdered);
 
   // Form validation
   const validateInputs = () => {
@@ -308,8 +305,6 @@ const Widget = props => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        console.log("res cons", responseConsultation);
-        console.log("res cons", responseConsultation.data);
         setSubmittedConsultationId(responseConsultation.data.id);
       } else {
         //TO DO
@@ -321,8 +316,6 @@ const Widget = props => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        //console.log("res cons", responseConsultation);
-        console.log("res cons", responseConsultation.data);
         setSubmittedConsultationId(responseConsultation.data.id);
         toast.success("Consultation Updated", {
           position: toast.POSITION.TOP_RIGHT,
@@ -381,8 +374,6 @@ const Widget = props => {
                 timeout: 15000,
               }
             );
-            //console.log('RESPONSE LAB: ', responseLab)
-            console.log("RESPONSE LAB: ", responseLab.data);
             setSubmittedLabId(responseLab.data.id);
           } else {
             //TO DO
@@ -394,8 +385,6 @@ const Widget = props => {
                 headers: { Authorization: `Bearer ${token}` },
               }
             );
-            //console.log("RESPONSE LAB: ", responseLab);
-            console.log("RESPONSE LAB: ", responseLab.data);
             setSubmittedLabId(responseLab.data.id);
             toast.success("Lab form Updated", {
               position: toast.POSITION.TOP_RIGHT,
@@ -484,10 +473,12 @@ const Widget = props => {
     ]);
   };
 
-  const removeHandleAddFieldsLab = e => {
+  const removeHandleAddFieldsLab = (e, labIndex) => {
     e.preventDefault();
     if (inputFieldsLab.length > 1) {
-      setInputFieldsLab(inputFieldsLab.slice(0, -1));
+      const inputFieldsLabCopy = [...inputFieldsLab];
+      inputFieldsLabCopy.splice(labIndex, 1);
+      setInputFieldsLab(inputFieldsLabCopy);
     }
   };
 
@@ -539,7 +530,7 @@ const Widget = props => {
     }
     setInputFieldsLab(values);
   };
-  console.log("edit value: ", editPharmacyOrderValue);
+
   const handleAddPharmacyOrder = e => {
     e.preventDefault();
     setIsAddmedication(true);
@@ -1078,6 +1069,19 @@ const Widget = props => {
                               ))}
                             </select>
                           </Table.Cell>
+                          <Table.Cell>
+                            <Button
+                              color="red"
+                              size="tiny"
+                              type="button"
+                              onClick={e =>
+                                removeHandleAddFieldsLab(e, labIndex)
+                              }
+                              disabled={inputFieldsLab.length === 1}
+                            >
+                              <Icon name="minus" /> Remove
+                            </Button>
+                          </Table.Cell>
                         </Table.Row>
                       </Fragment>
                     ))}
@@ -1094,15 +1098,6 @@ const Widget = props => {
                         >
                           <Icon name="plus" /> Add Test
                         </Button>{" "}
-                        <Button
-                          color="red"
-                          size="tiny"
-                          type="button"
-                          onClick={removeHandleAddFieldsLab}
-                          disabled={inputFieldsLab.length === 1}
-                        >
-                          <Icon name="minus" /> Remove
-                        </Button>
                       </Table.HeaderCell>
                     </Table.Row>
                   </Table.Footer>

@@ -52,16 +52,15 @@ const AddPharmacyOrder = props => {
     errors,
     setErrors
   );
-  console.log("isAddmedication: ", props.isAddmedication);
   // Update form when editPharmacyOrderValue changes
   useEffect(() => {
-    if (props.editPharmacyOrderValue) {
+    if (!props.isAddmedication) {
       const order = props.editPharmacyOrderValue;
-      const encounterDate = order.encounterDate
-        ? format(parseISO(order.encounterDate), "yyyy-MM-dd")
+      const encounterDate = order?.encounterDate
+        ? format(parseISO(order?.encounterDate), "yyyy-MM-dd")
         : format(new Date(props.encounterDate), "yyyy-MM-dd");
-      const startDate = order.startDate
-        ? format(parseISO(order.startDate), "yyyy-MM-dd")
+      const startDate = order?.startDate
+        ? format(parseISO(order?.startDate), "yyyy-MM-dd")
         : "";
       setPharmacyOrder({
         ...order,
@@ -69,7 +68,11 @@ const AddPharmacyOrder = props => {
         startDate,
       });
     }
-  }, [props.editPharmacyOrderValue, props.encounterDate]);
+  }, [
+    props.editPharmacyOrderValue,
+    props.encounterDate,
+    props.isAddmedication,
+  ]);
 
   // Reset form on unmount
   useEffect(() => {
@@ -120,25 +123,41 @@ const AddPharmacyOrder = props => {
             .put(`${baseUrl}drug-orders/update/${pharmacyOrder.id}`, payload, {
               headers: { Authorization: `Bearer ${token}` },
             })
-            .then(resp => {
-              console.log("drug updated successfully", resp);
-              toast.success("Successfully Updated drug order!", {
-                position: toast.POSITION.TOP_RIGHT,
-              });
-            });
+            .then(resp => {});
         } else {
           await axios
             .post(`${baseUrl}drug-orders/order`, payload, {
               headers: { Authorization: `Bearer ${token}` },
             })
             .then(resp => {
+              setPharmacyOrder({
+                ...pharmacyOrder,
+                encounterDate: format(
+                  new Date(props.encounterDate),
+                  "yyyy-MM-dd"
+                ),
+                medicationName: "",
+                formulation: "",
+                routeOfAdmin: "",
+                timingInstructions: "",
+                quantityPrescribed: "",
+                strength: "",
+                strengthUnit: "",
+                frequency: "",
+                startDate: "",
+                duration: "",
+                durationUnit: "",
+                notes: "",
+                patientId: patientObj.id,
+                drugBrandName: "",
+                visitId: patientObj.visitId,
+              });
               props.setPharmacyOrder(prev => [...prev, resp.data]);
               toast.success("Successfully Saved drug order!", {
                 position: toast.POSITION.TOP_RIGHT,
               });
             });
         }
-
         setSaving(false);
         props.toggle();
       } catch (e) {

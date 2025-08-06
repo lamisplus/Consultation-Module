@@ -533,6 +533,7 @@ const Widget = props => {
 
   const handleAddPharmacyOrder = e => {
     e.preventDefault();
+    setEditPharmacyOrderValue(null); // ← Add this
     setIsAddmedication(true);
     setPharmacyModal(!pharmacyModal);
   };

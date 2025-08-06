@@ -539,6 +539,7 @@ const Widget = props => {
     }
     setInputFieldsLab(values);
   };
+  console.log("edit value: ", editPharmacyOrderValue);
   const handleAddPharmacyOrder = e => {
     e.preventDefault();
     setIsAddmedication(true);

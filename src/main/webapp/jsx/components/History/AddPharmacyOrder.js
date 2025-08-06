@@ -46,14 +46,13 @@ const AddPharmacyOrder = props => {
     drugBrandName: "",
     visitId: patientObj.visitId,
   });
-
   const [errors, setErrors] = useState({});
   const { initializeErrors, validate } = useMedicationValidation(
     pharmacyOrder,
     errors,
     setErrors
   );
-
+  console.log("isAddmedication: ", props.isAddmedication);
   // Update form when editPharmacyOrderValue changes
   useEffect(() => {
     if (props.editPharmacyOrderValue) {
@@ -74,8 +73,9 @@ const AddPharmacyOrder = props => {
 
   // Reset form on unmount
   useEffect(() => {
-    return () => {
+    if (props.isAddmedication) {
       setPharmacyOrder({
+        ...pharmacyOrder,
         encounterDate: format(new Date(props.encounterDate), "yyyy-MM-dd"),
         medicationName: "",
         formulation: "",
@@ -93,8 +93,8 @@ const AddPharmacyOrder = props => {
         drugBrandName: "",
         visitId: patientObj.visitId,
       });
-    };
-  }, [props.encounterDate, patientObj.id, patientObj.visitId]);
+    }
+  }, [props.isAddmedication]);
 
   const handleInputChangePharmacyOrderDto = e => {
     setErrors(prev => ({ ...prev, [e.target.name]: "" }));

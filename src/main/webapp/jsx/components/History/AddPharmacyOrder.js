@@ -306,7 +306,7 @@ const AddPharmacyOrder = props => {
                         <span
                           style={{
                             position: "absolute",
-                            top: "1.3em",
+                            top: ".7em",
                             right: "6%",
                             zIndex: 100,
                           }}

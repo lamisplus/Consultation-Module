@@ -35,6 +35,7 @@ import VitalsCard from "../Consultation/VitalsCard";
 import { icd10 } from "./icd-10";
 import PostClient from "../Patient/PostClient";
 import useSanitizeEditorInput from "../../../hooks/useSanitizeEditorInput";
+import { DrugInfo } from "../Patient/DrugInfo";
 
 const useStyles = makeStyles(theme => ({
   card: {
@@ -133,26 +134,16 @@ const Widget = props => {
   const [labTests, setLabTests] = useState([]);
   const [priorities, setPriorities] = useState([]);
   const [prevTests, setPrevTests] = useState([]);
-
+  const [isAddmedication, setIsAddmedication] = useState(false);
+  console.log("pharmacyOrder: ", pharmacyOrder);
   // Edit pharmacy order state
-  const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState({
-    encounterDateTime: "",
-    drugName: "",
-    dosageStrength: "",
-    dosageStrengthUnit: "",
-    dosageFrequency: "",
-    startDate: "",
-    duration: "",
-    durationUnit: "",
-    comments: "",
-    patientId: patientObj.id,
-    orderedBy: "",
-    dateTimePrescribed: "",
-    visitId: patientObj.visitId,
-  });
+  const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState(null);
 
   // Toggle functions
-  const toggle = () => setPharmacyModal(!pharmacyModal);
+  const toggle = () => {
+    setPharmacyModal(!pharmacyModal);
+  };
+
   const toggleOrder = () => setPharmacyOrderModal(!pharmacyOrderModal);
   const togglePost = () => setModalPost(!modalPost);
 
@@ -233,6 +224,25 @@ const Widget = props => {
     }
   }, [patientObj.visitId]);
 
+  const [drugsOrdered, setDrugsOrdered] = useState([]);
+
+  const fetchPatientDrugOrder = async patientId => {
+    try {
+      const response = await axios.get(
+        `${baseUrl}drug-orders/get-patient-drugOrder/${patientId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setDrugsOrdered(response.data);
+    } catch (error) {
+      console.error("Error fetching drug order:", error.message);
+      throw error;
+    }
+  };
+
+  useEffect(() => fetchPatientDrugOrder(patientObj?.id), []);
+
   // Form validation
   const validateInputs = () => {
     let temp = { ...errors };
@@ -256,12 +266,14 @@ const Widget = props => {
     return Object.values(temp).every(x => x === "");
   };
 
+  const [submittedConsultationId, setSubmittedConsultationId] = useState(0);
+  const [submittedLabId, setSubmittedLabId] = useState(0);
+  const [submittedLPharmId, setSubmittedPhrmId] = useState(0);
   // Form submission
   const onSubmit = async data => {
     if (!validateInputs()) {
       return;
     }
-
     try {
       const diagnosisList = inputFieldsDiagnosis
         .filter(field => field.diagnosis)
@@ -285,9 +297,30 @@ const Widget = props => {
         signature: signature.name,
       };
 
-      await axios.post(`${baseUrl}consultations`, consultationData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (!submitted) {
+        const responseConsultation = await axios.post(
+          `${baseUrl}consultations`,
+          consultationData,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setSubmittedConsultationId(responseConsultation.data.id);
+      } else {
+        //TO DO
+        //Implement Update API call
+        const responseConsultation = await axios.put(
+          `${baseUrl}consultations/${submittedConsultationId}`,
+          consultationData,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setSubmittedConsultationId(responseConsultation.data.id);
+        toast.success("Consultation Updated", {
+          position: toast.POSITION.TOP_RIGHT,
+        });
+      }
 
       // Handle lab tests if any
       const labTests = inputFieldsLab
@@ -332,10 +365,31 @@ const Widget = props => {
         };
 
         try {
-          await axios.post(`${baseUrl}laboratory/orders`, labOrderData, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 15000,
-          });
+          if (!submitted) {
+            const responseLab = await axios.post(
+              `${baseUrl}laboratory/orders`,
+              labOrderData,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 15000,
+              }
+            );
+            setSubmittedLabId(responseLab.data.id);
+          } else {
+            //TO DO
+            //Implement Update API call
+            const responseLab = await axios.put(
+              `${baseUrl}laboratory/orders/${submittedLabId}`,
+              labOrderData,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            setSubmittedLabId(responseLab.data.id);
+            toast.success("Lab form Updated", {
+              position: toast.POSITION.TOP_RIGHT,
+            });
+          }
 
           toast.success("Successfully saved consultation and lab orders!", {
             position: toast.POSITION.TOP_CENTER,
@@ -419,10 +473,12 @@ const Widget = props => {
     ]);
   };
 
-  const removeHandleAddFieldsLab = e => {
+  const removeHandleAddFieldsLab = (e, labIndex) => {
     e.preventDefault();
     if (inputFieldsLab.length > 1) {
-      setInputFieldsLab(inputFieldsLab.slice(0, -1));
+      const inputFieldsLabCopy = [...inputFieldsLab];
+      inputFieldsLabCopy.splice(labIndex, 1);
+      setInputFieldsLab(inputFieldsLabCopy);
     }
   };
 
@@ -477,12 +533,15 @@ const Widget = props => {
 
   const handleAddPharmacyOrder = e => {
     e.preventDefault();
+    setEditPharmacyOrderValue(null); // ← Add this
+    setIsAddmedication(true);
     setPharmacyModal(!pharmacyModal);
   };
 
   const handleEditPharmacyOrder = pharmacy => {
+    setIsAddmedication(false);
     setEditPharmacyOrderValue(pharmacy);
-    setPharmacyOrderModal(!pharmacyOrderModal);
+    setPharmacyModal(!pharmacyModal);
   };
 
   const handleDelete = async id => {
@@ -690,7 +749,10 @@ const Widget = props => {
                           id="onsetDate"
                           name="onsetDate"
                           type="date"
-                          min={moment(new Date()).format("YYYY-MM-DD")}
+                          max={moment(encounterDate).format("YYYY-MM-DD")}
+                          min={moment(patientObj.dateOfBirth).format(
+                            "YYYY-MM-DD"
+                          )}
                           fluid
                           placeholder="Onset Date"
                           value={inputField.onsetDate}
@@ -1008,6 +1070,19 @@ const Widget = props => {
                               ))}
                             </select>
                           </Table.Cell>
+                          <Table.Cell>
+                            <Button
+                              color="red"
+                              size="tiny"
+                              type="button"
+                              onClick={e =>
+                                removeHandleAddFieldsLab(e, labIndex)
+                              }
+                              disabled={inputFieldsLab.length === 1}
+                            >
+                              <Icon name="minus" /> Remove
+                            </Button>
+                          </Table.Cell>
                         </Table.Row>
                       </Fragment>
                     ))}
@@ -1024,15 +1099,6 @@ const Widget = props => {
                         >
                           <Icon name="plus" /> Add Test
                         </Button>{" "}
-                        <Button
-                          color="red"
-                          size="tiny"
-                          type="button"
-                          onClick={removeHandleAddFieldsLab}
-                          disabled={inputFieldsLab.length === 1}
-                        >
-                          <Icon name="minus" /> Remove
-                        </Button>
                       </Table.HeaderCell>
                     </Table.Row>
                   </Table.Footer>
@@ -1052,33 +1118,13 @@ const Widget = props => {
             <br />
             <br />
 
-            {pharmacyOrder.length > 0 ? (
-              pharmacyOrder.map((pharmacy, i) => (
-                <div className="page-header" key={i}>
-                  <p>
-                    <b>Drug:</b> {pharmacy.drugName} <b>Date Ordered:</b>{" "}
-                    {pharmacy.dateTimePrescribed.replace("@", " ")}
-                    <Label
-                      as="a"
-                      color="blue"
-                      size="tiny"
-                      onClick={() => handleEditPharmacyOrder(pharmacy)}
-                      style={{ marginLeft: "2%", cursor: "pointer" }}
-                    >
-                      <Icon name="eye" /> View
-                    </Label>{" "}
-                    <Label
-                      as="a"
-                      color="red"
-                      size="tiny"
-                      onClick={() => handleDelete(pharmacy.id)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <Icon name="delete" /> Delete
-                    </Label>
-                  </p>
-                  <hr />
-                </div>
+            {pharmacyOrder?.length > 0 ? (
+              pharmacyOrder?.map((pharmacy, i) => (
+                <DrugInfo
+                  pharmacy={pharmacy}
+                  handleEditPharmacyOrder={handleEditPharmacyOrder}
+                  handleDelete={handleDelete}
+                />
               ))
             ) : (
               <p>No pharmacy orders for this patient</p>
@@ -1137,6 +1183,16 @@ const Widget = props => {
               Submit Consultation
             </Button>
           )}
+          {submitted && (
+            <Button
+              type="submit"
+              variant="contained"
+              color="green"
+              // disabled={submitted}
+            >
+              Update Submission
+            </Button>
+          )}
         </form>
       </Grid.Column>
 
@@ -1146,13 +1202,17 @@ const Widget = props => {
         toggle={toggle}
         patientObj={patientObj}
         showModal={pharmacyModal}
+        setPharmacyOrder={setPharmacyOrder}
+        editPharmacyOrderValue={editPharmacyOrderValue}
+        isAddmedication={isAddmedication}
+        setIsAddmedication={setIsAddmedication}
       />
-      <EditPharmacyOrder
+      {/* <EditPharmacyOrder
         toggle={toggleOrder}
         patientObj={patientObj}
         showModal={pharmacyOrderModal}
         editPharmacyOrderValue={editPharmacyOrderValue}
-      />
+      /> */}
       <PostClient
         toggle={togglePost}
         showModal={modalPost}

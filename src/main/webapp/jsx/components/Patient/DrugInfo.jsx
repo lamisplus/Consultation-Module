@@ -23,18 +23,9 @@ export const DrugInfo = ({
           {moment(pharmacy?.prescriptionDate).format("YYYY-MM-DD h:mm A")}
         </Grid.Column>
 
-        {/* <Grid.Column width={3}>
-        <Button
-          color="primary"
-          size="tiny"
-          type="button"
-          onClick={() => handleEditPharmacyOrder(pharmacy)}
-        >
-          <Icon name="eye" /> View
-        </Button>
-      </Grid.Column> */}
+        
 
-        <Grid.Column width={3}>
+        <Grid.Column width={6} style={{display: "flex", flexDirection: "row"}}>
           <Button
             color="teal"
             size="tiny"
@@ -43,7 +34,27 @@ export const DrugInfo = ({
           >
             <Icon name="edit" /> Edit
           </Button>
+
+          <Button
+            color="red"
+            size="tiny"
+            type="button"
+            onClick={() => handleDelete(pharmacy.id)}
+          >
+            <Icon name="remove" /> Remove
+          </Button>
         </Grid.Column>
+
+        {/* <Grid.Column width={3}>
+          <Button
+            color="red"
+            size="tiny"
+            type="button"
+            onClick={() => handleEditPharmacyOrder(pharmacy)}
+          >
+            <Icon name="remove" /> Remove
+          </Button>
+        </Grid.Column> */}
       </Grid>
       <hr />
     </div>

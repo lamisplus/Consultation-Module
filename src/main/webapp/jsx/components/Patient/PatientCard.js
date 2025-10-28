@@ -33,6 +33,8 @@ function PatientCard(props) {
   const toggle = () => setModal(!modal);
   const toggleCheckout = () => setCheckoutModal(!checkoutModal);
   styles = usePatientCardStyles();
+
+  
   const checkConsultationHistory = useCallback(async () => {
     try {
       const response = await axios.get(

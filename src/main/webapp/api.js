@@ -20,8 +20,11 @@ export const apiUrl =
 
 export const token =
     process.env.NODE_ENV === "development"
-        ? "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWVzdEBsYW1pc3BsdXMub3JnIiwiYXV0aCI6IlN1cGVyIEFkbWluIiwibmFtZSI6Ikd1ZXN0IEd1ZXN0IiwiZXhwIjoxNzU1MTgzMjEyfQ.t_yZiqdjp7QMApsSqI_fWvsHbTvsYR-CPjrlW5xoPAJR4fPI1a7NhQAzYzgg8PTkQVHt7-12ZK16T0lvV-LuDw"
+        ? "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWVzdEBsYW1pc3BsdXMub3JnIiwiYXV0aCI6IlN1cGVyIEFkbWluIiwibmFtZSI6Ikd1ZXN0IEd1ZXN0IiwiZXhwIjoxNzYxNjYyNDczfQ.qeUzKe2uCHspnMlQXH-Su0p5J-7IyVqW2ICVIF_ij9CvBtBkLgNysd1EsJ2pR2MQweah1SV4pfobpPOd6EqooQ"
         : new URLSearchParams(window.location.search).get("jwt");
 
+export const audioTranscriptionUrl = process.env.NODE_ENV === "development"
+? "http://localhost:7860/api/v1"
+: "http://localhost:7860/api/v1";
 
 

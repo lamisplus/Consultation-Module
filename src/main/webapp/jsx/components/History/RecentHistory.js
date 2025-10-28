@@ -9,7 +9,7 @@ import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { token, url as baseUrl, apiUrl } from "../../../api";
+import { token, url as baseUrl, apiUrl, audioTranscriptionUrl } from "../../../api";
 import { Grid, Segment, Label, Icon, Button, Input } from "semantic-ui-react";
 import "tinymce/tinymce";
 import "tinymce/icons/default";
@@ -36,6 +36,7 @@ import { icd10 } from "./icd-10";
 import PostClient from "../Patient/PostClient";
 import useSanitizeEditorInput from "../../../hooks/useSanitizeEditorInput";
 import { DrugInfo } from "../Patient/DrugInfo";
+import AudioRecorder from "../Patient/AudioRecorder";
 
 const useStyles = makeStyles(theme => ({
   card: {
@@ -128,6 +129,41 @@ const Widget = props => {
     },
   ]);
 
+  const [transcriptionProcess, setTranscriptionProcess] = useState(null)
+
+  const handleTranscriptionComplete = (result) => {
+    setBody(result.corrected_transcription || result.raw_transcription)
+    setTranscriptionProcess(result)
+  };
+
+
+  const handleSaveUsertranscriptFinalDraft = async (recordingUuid, updates) => {
+    try {
+      const formData = new FormData();
+      formData.append('user_edited_transcription', updates.user_edited_transcription);
+      formData.append('transcription_text', updates.transcription_text);
+      formData.append('user_id', updates.user_id);
+  
+      const response = await axios.put(
+        `${audioTranscriptionUrl}/recordings/${recordingUuid}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Update failed';
+      console.error('Update error:', errorMessage);
+      throw err;
+    }
+  };
+
+
+
+
   // Data states
   const [pharmacyOrder, setPharmacyOrder] = useState([]);
   const [labGroups, setLabGroups] = useState([]);
@@ -135,7 +171,7 @@ const Widget = props => {
   const [priorities, setPriorities] = useState([]);
   const [prevTests, setPrevTests] = useState([]);
   const [isAddmedication, setIsAddmedication] = useState(false);
-  console.log("pharmacyOrder: ", pharmacyOrder);
+
   // Edit pharmacy order state
   const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState(null);
 
@@ -271,6 +307,22 @@ const Widget = props => {
   const [submittedLPharmId, setSubmittedPhrmId] = useState(0);
   // Form submission
   const onSubmit = async data => {
+
+    const userAccount = JSON.parse(localStorage.getItem('user_account'));
+
+    if (transcriptionProcess.save_transcript) {
+      try {
+        await handleSaveUsertranscriptFinalDraft(transcriptionProcess.recording_uuid, {
+          user_edited_transcription: body,
+          transcription_text: transcriptionProcess.corrected_transcription,
+          user_id: userAccount.id,
+          recording_uuid: transcriptionProcess.recording_uuid
+        })
+      } catch (error) {
+        console.log("Updating transription failed")
+      }
+    }
+    
     if (!validateInputs()) {
       return;
     }
@@ -364,6 +416,8 @@ const Widget = props => {
           labOrderIndication: null,
         };
 
+       
+
         try {
           if (!submitted) {
             const responseLab = await axios.post(
@@ -394,10 +448,16 @@ const Widget = props => {
           toast.success("Successfully saved consultation and lab orders!", {
             position: toast.POSITION.TOP_CENTER,
           });
+
+          const userAccount = JSON.parse(localStorage.getItem('user_account'));
+
+
+          
+
         } catch (labError) {
           toast.warning(
             "Consultation saved, but lab orders failed. Error: " +
-              (labError.response?.data?.error || labError.message),
+            (labError.response?.data?.error || labError.message),
             { position: toast.POSITION.TOP_CENTER }
           );
         }
@@ -412,8 +472,7 @@ const Widget = props => {
     } catch (consultationError) {
       console.error("Consultation error:", consultationError);
       toast.error(
-        `Error saving consultation: ${
-          consultationError.response?.data?.message || consultationError.message
+        `Error saving consultation: ${consultationError.response?.data?.message || consultationError.message
         }`,
         { position: toast.POSITION.TOP_CENTER }
       );
@@ -659,6 +718,7 @@ const Widget = props => {
               <Editor
                 textareaName="visitNote"
                 initialValue=""
+                value={body}
                 init={{
                   width: "100%",
                   height: 300,
@@ -674,6 +734,7 @@ const Widget = props => {
                 }}
                 onEditorChange={newText => setBody(newText)}
               />
+              <AudioRecorder onTranscriptionComplete={handleTranscriptionComplete} patient={patientObj} />
             </div>
             <br />
 
@@ -1038,15 +1099,15 @@ const Widget = props => {
                               <option>Select</option>
                               {labInputField.labTest === ""
                                 ? labTests.map(d => (
-                                    <option key={d.id} value={d.id}>
-                                      {d.labTestName}
-                                    </option>
-                                  ))
+                                  <option key={d.id} value={d.id}>
+                                    {d.labTestName}
+                                  </option>
+                                ))
                                 : prevTests.map(d => (
-                                    <option key={d.id} value={d.id}>
-                                      {d.labTestName}
-                                    </option>
-                                  ))}
+                                  <option key={d.id} value={d.id}>
+                                    {d.labTestName}
+                                  </option>
+                                ))}
                             </select>
                           </Table.Cell>
                           <Table.Cell>
@@ -1188,7 +1249,7 @@ const Widget = props => {
               type="submit"
               variant="contained"
               color="green"
-              // disabled={submitted}
+            // disabled={submitted}
             >
               Update Submission
             </Button>

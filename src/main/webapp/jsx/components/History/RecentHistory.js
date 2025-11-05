@@ -112,7 +112,6 @@ const Widget = props => {
   const currentDate = new Date();
   const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
   const [body, setBody] = useState("");
-  console.log(body);
   const [signature, setSignature] = useState({ name: "" });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -136,55 +135,48 @@ const Widget = props => {
       status: 0,
     },
   ]);
-
   const [transcriptionProcess, setTranscriptionProcess] = useState(null)
 
 
-  // const handleTranscriptionComplete = (result) => {
-  //   const currentDate = new Date();
-  //   const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
 
-  //   // Use HTML line breaks and proper formatting for WYSIWYG
-  //   const transcriptionHeader = `<br><br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
-  //     <strong>============== Transcription at ${formattedDate} ===========</strong>
-  //   </div><br>`;
-
-  //   const transcriptionFooter = `<br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
-  //     <strong>============ END Transcription ====================</strong>
-  //   </div><br>`;
-
-  //   const transcriptionContent = (result.corrected_transcription || result.raw_transcription)
-  //     .replace(/\n/g, '<br>'); // Convert any newlines in transcription to HTML breaks
-
-  //   const fullTranscription = transcriptionHeader + transcriptionContent + transcriptionFooter;
-
-  //   setBody(prevBody => prevBody + fullTranscription);
-  //   setTranscriptionProcess(result);
-  // };
 
   const handleTranscriptionComplete = (result) => {
     const currentDate = new Date();
     const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
 
-    const transcriptionHeader = `<br><br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
-      <strong>============== Voice Transcription - ${formattedDate} ===========</strong><br>
-      <em>Total Recordings: ${result.recording_count} | Duration: ${Math.floor(result.total_duration / 60)}:${(result.total_duration % 60).toString().padStart(2, '0')}</em>
-    </div><br>`;
+    
+    const transcriptionHeader = `
+        <p>
+          <strong>Voice Transcription - ${formattedDate}</strong><br>
+          <em>Total Recordings: ${result.recording_count} | Duration: ${Math.floor(result.total_duration / 60)}:${(result.total_duration % 60).toString().padStart(2, '0')}</em>
+        </p>
+    `;
 
-    const transcriptionFooter = `<br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
-      <strong>============ END Transcription ====================</strong>
-    </div><br>`;
+    const transcriptionFooter = `
+        <p>
+        ==============================================<strong>END Transcription</strong>======================================
+        </p>
+    `;
 
-    const transcriptionContent = result.corrected_transcription.replace(/\n/g, '<br>');
+    
+    const transcriptionContent = (result.corrected_transcription || '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => `<p>${line}</p>`)
+      .join(''); // Join back together
+
     const fullTranscription = transcriptionHeader + transcriptionContent + transcriptionFooter;
+
+    console.log('Formatted transcription:', fullTranscription);
 
     setBody(prevBody => prevBody + fullTranscription);
 
-    // Optionally save if needed
-    if (result.save_transcript) {
-      // Your save logic here
-    }
+    setTranscriptionProcess(result)
+
   };
+
+
 
   const handleSaveUsertranscriptFinalDraft = async (recordingUuid, updates) => {
     try {
@@ -359,7 +351,7 @@ const Widget = props => {
 
     const userAccount = JSON.parse(localStorage.getItem('user_account'));
 
-    if (transcriptionProcess.save_transcript) {
+    if (transcriptionProcess?.save_transcript) {
       try {
         await handleSaveUsertranscriptFinalDraft(transcriptionProcess.recording_uuid, {
           user_edited_transcription: body,
@@ -368,14 +360,14 @@ const Widget = props => {
           recording_uuid: transcriptionProcess.recording_uuid
         })
 
-        toast.success("Transcription and form saved", {
-          position: toast.POSITION.TOP_RIGHT,
-        });
+        // toast.success("Transcription and form saved", {
+        //   position: toast.POSITION.TOP_RIGHT,
+        // });
       } catch (error) {
         console.log("Updating transription failed")
-        toast.error("Error saving Transcription and Form", {
-          position: toast.POSITION.TOP_RIGHT,
-        });
+        // toast.error("Error saving Transcription and Form", {
+        //   position: toast.POSITION.TOP_RIGHT,
+        // });
       }
     }
 
@@ -700,8 +692,8 @@ const Widget = props => {
     loadPharmacyOrders,
   ]);
 
-  const sanitizedEditorText = useSanitizeEditorInput(body);
-  useEffect(() => setBody(sanitizedEditorText), [sanitizedEditorText]);
+  // const sanitizedEditorText = useSanitizeEditorInput(body);
+  // useEffect(() => setBody(sanitizedEditorText), [sanitizedEditorText]);
 
   return (
     <Grid
@@ -773,6 +765,7 @@ const Widget = props => {
               )}
               <Editor
                 textareaName="visitNote"
+                id="visitNote"
                 initialValue=""
                 value={body}
                 init={{

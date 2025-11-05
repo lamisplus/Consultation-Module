@@ -35,7 +35,6 @@ import {
 } from '@material-ui/icons';
 import { audioTranscriptionUrl } from '../../../api';
 
-
 const useStyles = makeStyles((theme) => ({
 
     fullscreenDialog: {
@@ -247,7 +246,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
     const [audioUrl, setAudioUrl] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(300);
     const [saveForTraining, setSaveForTraining] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [error, setError] = useState(null);
@@ -256,11 +254,13 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
     const [isPaused, setIsPaused] = useState(false);
     const [audioLevels, setAudioLevels] = useState(Array(40).fill(0));
     const [showHistory, setShowHistory] = useState(false);
+    const [isStartingRecording, setIsStartingRecording] = useState(false);
 
     const [accumulatedTranscription, setAccumulatedTranscription] = useState("");
     const [recordingCount, setRecordingCount] = useState(0);
     const [totalRecordingTime, setTotalRecordingTime] = useState(0);
     const [recordingHistory, setRecordingHistory] = useState([]);
+    const [returnedTranscription, setReturnedTranscription] = useState(null);
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
@@ -271,10 +271,18 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
     const analyserRef = useRef(null);
     const dataArrayRef = useRef(null);
     const animationFrameRef = useRef(null);
-
-    const MAX_RECORDING_TIME = 180 * 20;
+    
+    // Sound refs similar to CheckinPatientsAlert.js
+    const audioRefs = useRef({
+        startRecording: new Audio(`${process.env.PUBLIC_URL}/tape-start.wav`),
+    });
 
     useEffect(() => {
+        // Preload sounds when component mounts
+        Object.values(audioRefs.current).forEach((audio) => {
+            audio.load();
+        });
+
         return () => {
             cleanupResources();
         };
@@ -292,6 +300,33 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         if (audioUrl) URL.revokeObjectURL(audioUrl);
     };
 
+    const playSound = (soundKey) => {
+        return new Promise((resolve, reject) => {
+            const audio = audioRefs.current[soundKey];
+            if (audio) {
+                // Reset audio to start from beginning
+                audio.currentTime = 0;
+                
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        // Set up event listener for when sound finishes
+                        const onEnded = () => {
+                            audio.removeEventListener('ended', onEnded);
+                            resolve();
+                        };
+                        audio.addEventListener('ended', onEnded);
+                    }).catch(err => {
+                        console.log('Audio play failed:', err);
+                        reject(err);
+                    });
+                }
+            } else {
+                resolve(); // If no audio, resolve immediately
+            }
+        });
+    };
+
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -300,15 +335,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
 
     const startTimer = () => {
         timerRef.current = setInterval(() => {
-            setRecordingTime(prev => {
-                const newTime = prev + 1;
-                setTimeLeft(MAX_RECORDING_TIME - newTime);
-                if (newTime >= MAX_RECORDING_TIME) {
-                    stopRecording();
-                    return prev;
-                }
-                return newTime;
-            });
+            setRecordingTime(prev => prev + 1);
         }, 1000);
     };
 
@@ -389,6 +416,12 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
     const startRecording = async () => {
         try {
             setError(null);
+            setIsStartingRecording(true);
+            
+            // Play start recording sound and wait for it to finish
+            await playSound('startRecording');
+            
+            // Now start the actual recording
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
 
@@ -423,10 +456,11 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
 
             mediaRecorder.start(100);
             setIsRecording(true);
+            setIsStartingRecording(false);
             setRecordingTime(0);
-            setTimeLeft(MAX_RECORDING_TIME);
             startTimer();
         } catch (err) {
+            setIsStartingRecording(false);
             setError('Microphone access denied. Please allow microphone permissions and try again.');
             console.error('Error accessing microphone:', err);
         }
@@ -459,7 +493,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         setAudioBlob(null);
         setAudioUrl(null);
         setRecordingTime(0);
-        setTimeLeft(MAX_RECORDING_TIME);
         setIsPlaying(false);
         setIsPaused(false);
         audioChunksRef.current = [];
@@ -482,12 +515,13 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
             formData.append('language', languageSelect);
             formData.append('apply_correction', 'true');
             formData.append('save_transcript', saveForTraining.toString());
+            formData.append('location', "OPD-consultation");
             formData.append('patient_id', (patient?.id || 10).toString());
             formData.append('encounter_id', (patient?.visitId || 20).toString());
             formData.append('user_id', (userAccount?.id || '').toString());
             formData.append('facility_id', (userAccount?.currentOrganisationUnitId || '').toString());
 
-            // Make actual API call - replace this with your axios import
+            
             const response = await fetch(`${audioTranscriptionUrl}/transcribe`, {
                 method: 'POST',
                 body: formData,
@@ -498,10 +532,11 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
             }
 
             const result = await response.json();
+            setReturnedTranscription(result)
             const currentTime = new Date().toLocaleTimeString();
             const recordingLength = formatTime(recordingTime);
 
-            // Add to accumulated transcription with timestamp
+            
             const newEntry = `\n[Recording ${recordingCount + 1} - ${currentTime} - Duration: ${recordingLength}]\n${result.corrected_transcription || result.raw_transcription}\n`;
 
             setAccumulatedTranscription(prev => prev + newEntry);
@@ -513,7 +548,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                 timestamp: currentTime
             }]);
 
-            // Reset current recording but keep modal open
+        
             resetRecording();
             setError(null);
 
@@ -545,11 +580,10 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                 save_transcript: saveForTraining,
                 recording_count: recordingCount,
                 total_duration: totalRecordingTime,
-                formatted_date: formattedDate
+                formatted_date: formattedDate,
+                recording_uuid: returnedTranscription?.recording_uuid
             });
         }
-
-        // Close modal and reset everything
         closeModal();
     };
 
@@ -560,7 +594,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         cleanupResources();
         setIsModalOpen(false);
 
-        // Reset all state
         resetRecording();
         setError(null);
         setAccumulatedTranscription("");
@@ -570,15 +603,14 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         setIsTranscribing(false);
         setSaveForTraining(false);
         setShowHistory(false);
+        setIsStartingRecording(false);
     };
 
     const getRecordingAreaClass = () => {
-        if (isRecording) return `${classes.recordingCard} ${classes.recordingCardActive}`;
+        if (isRecording || isStartingRecording) return `${classes.recordingCard} ${classes.recordingCardActive}`;
         if (audioBlob) return `${classes.recordingCard} ${classes.recordingCardComplete}`;
         return classes.recordingCard;
     };
-
-    const recordingProgress = (recordingTime / MAX_RECORDING_TIME) * 100;
 
     return (
         <>
@@ -654,21 +686,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                     </Select>
                                 </FormControl>
 
-                                {/* <FormControl fullWidth size="small" style={{ marginBottom: 12 }}>
-                                    <InputLabel>Model</InputLabel>
-                                    <Select
-                                        value={modelSizeSelect}
-                                        onChange={(e) => setModelSizeSelect(e.target.value)}
-                                        disabled={isRecording}
-                                        style={{ borderRadius: 1 }}
-                                    >
-                                        <MenuItem value="tiny">Tiny (Fastest)</MenuItem>
-                                        <MenuItem value="base">Base</MenuItem>
-                                        <MenuItem value="small">Small (Recommended)</MenuItem>
-                                        <MenuItem value="medium">Medium (Most Accurate)</MenuItem>
-                                    </Select>
-                                </FormControl> */}
-
                                 <Paper className={classes.consentBox} elevation={0}>
                                     <FormControlLabel
                                         control={
@@ -676,7 +693,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                                 checked={saveForTraining}
                                                 onChange={(e) => setSaveForTraining(e.target.checked)}
                                                 color="primary"
-                                                disabled={isRecording}
+                                                disabled={isRecording || isStartingRecording}
                                             />
                                         }
                                         label={
@@ -694,45 +711,35 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                     />
                                 </Paper>
                             </Paper>
-                            
+
                             <Paper
                                 elevation={3}
                                 className={getRecordingAreaClass()}
-                                onClick={isRecording ? null : (!audioBlob ? startRecording : null)}
+                                onClick={isRecording || isStartingRecording ? null : (!audioBlob ? startRecording : null)}
                             >
-                                {isRecording && (
-                                    <div
-                                        className={classes.progressBar}
-                                        style={{ width: `${recordingProgress}%` }}
-                                    />
-                                )}
-
-                                {/* {isRecording && !isPaused && (
-                                    <div className={classes.waveformContainer}>
-                                        {audioLevels.map((level, index) => (
-                                            <div
-                                                key={index}
-                                                className={classes.waveformBar}
-                                                style={{ height: `${level}px` }}
-                                            />
-                                        ))}
-                                    </div>
-                                )} */}
-
                                 <Box position="relative" zIndex={10} textAlign="center">
-                                    {!isRecording && !audioBlob && (
+                                    {!isRecording && !audioBlob && !isStartingRecording && (
                                         <>
                                             <MicIcon className={classes.micIcon} color="action" />
                                             <Typography variant="h6" color="textSecondary">
                                                 Click to start recording
                                             </Typography>
-                                            <Typography variant="caption" color="textSecondary">
-                                                Maximum: {MAX_RECORDING_TIME / 60} minutes
+                                        </>
+                                    )}
+
+                                    {isStartingRecording && (
+                                        <>
+                                            <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
+                                            <Typography variant="h6" color="error">
+                                                Starting recording...
+                                            </Typography>
+                                            <Typography variant="body2" color="textSecondary">
+                                                Please wait for the sound to finish
                                             </Typography>
                                         </>
                                     )}
 
-                                    {isRecording && (
+                                    {isRecording && !isStartingRecording && (
                                         <>
                                             <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
                                             <Typography variant="h6" color="error">
@@ -741,9 +748,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                             <Typography variant="h3" color="error" className={classes.timeDisplay}>
                                                 {formatTime(recordingTime)}
                                             </Typography>
-                                            {/* <Typography variant="body2" color="error">
-                                                Time remaining: {formatTime(timeLeft)}
-                                            </Typography> */}
                                         </>
                                     )}
 
@@ -844,7 +848,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                                 variant="outlined"
                                                 startIcon={<ReplayIcon />}
                                                 onClick={resetRecording}
-                                                style={{ borderRadius: 1, flexGrow: 1 }} // flexGrow: 1 makes it take equal space
+                                                style={{ borderRadius: 1, flexGrow: 1 }}
                                                 fullWidth
                                             >
                                                 Reset
@@ -856,7 +860,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                                 onClick={handleTranscribe}
                                                 disabled={isTranscribing}
                                                 fullWidth
-                                                style={{ flexGrow: 1, borderRadius: 1 }} // flexGrow: 1 makes it take equal space
+                                                style={{ flexGrow: 1, borderRadius: 1 }}
                                             >
                                                 {isTranscribing ? 'Transcribing...' : 'Transcribe'}
                                             </Button>
@@ -865,10 +869,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                 </Box>
                             </Paper>
 
-                            
-                           
-
-                            
                             {recordingCount > 0 && (
                                 <Button
                                     variant="outlined"
@@ -927,7 +927,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                             )}
                         </div>
 
-
                         <div className={classes.rightPanel}>
                             <Paper elevation={3} className={classes.transcriptionCard}>
                                 <div className={classes.transcriptionHeader}>
@@ -970,15 +969,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
 
                                 <div className={classes.actionButtons}>
                                     <Button
-                                        variant="outlined"
-                                        startIcon={<SummarizeIcon />}
-                                        disabled={!accumulatedTranscription}
-                                        fullWidth
-                                        style={{ borderRadius: 1 }}
-                                    >
-                                        Generate SOAP Summary (Coming Soon)
-                                    </Button>
-                                    <Button
                                         variant="contained"
                                         color="primary"
                                         startIcon={<CheckCircleIcon />}
@@ -994,7 +984,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                             </Paper>
                         </div>
                     </div>
-
 
                     <Snackbar
                         open={!!error}

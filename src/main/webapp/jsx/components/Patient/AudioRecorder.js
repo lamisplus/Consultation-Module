@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
     IconButton,
     Select,
@@ -14,11 +13,12 @@ import {
     Button,
     Typography,
     Box,
-    LinearProgress,
     Paper,
     Snackbar,
-    Fab,
     Tooltip,
+    Divider,
+    Chip,
+    CircularProgress,
 } from '@material-ui/core';
 import {
     Close as CloseIcon,
@@ -28,45 +28,62 @@ import {
     Pause as PauseIcon,
     Send as SendIcon,
     Replay as ReplayIcon,
+    Description as DescriptionIcon,
+    Assessment as SummarizeIcon,
+    CheckCircle as CheckCircleIcon,
+    History as HistoryIcon,
 } from '@material-ui/icons';
 import { audioTranscriptionUrl } from '../../../api';
-import axios from 'axios';
+
 
 const useStyles = makeStyles((theme) => ({
-    floatingButton: {
-        position: 'fixed',
-        bottom: theme.spacing(4),
-        right: theme.spacing(4),
-        zIndex: 1000,
-        animation: '$pulse 2s infinite',
-    },
-    '@keyframes pulse': {
-        '0%': {
-            boxShadow: '0 0 0 0 rgba(33, 150, 243, 0.7)',
-        },
-        '70%': {
-            boxShadow: '0 0 0 10px rgba(33, 150, 243, 0)',
-        },
-        '100%': {
-            boxShadow: '0 0 0 0 rgba(33, 150, 243, 0)',
+
+    fullscreenDialog: {
+        '& .MuiDialog-paper': {
+            margin: 0,
+            maxHeight: '100%',
+            width: '100%',
+            height: '100%',
         },
     },
-    dialogPaper: {
-        minWidth: 500,
-        maxWidth: 600,
+    dialogContent: {
+        padding: 0,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
     },
-    dialogTitle: {
+    header: {
+        // padding: theme.spacing(2, 3),
+        background: 'linear-gradient(135deg, #004d8a 0%, #0066b3 100%)',
+        color: 'white',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingRight: theme.spacing(1),
     },
-    formControl: {
-        width: '100%',
-        marginBottom: theme.spacing(2),
+    mainContent: {
+        flex: 1,
+        display: 'flex',
+        gap: theme.spacing(2),
+        padding: theme.spacing(3),
+        overflow: 'hidden',
+        backgroundColor: '#f5f7fa',
     },
-    recordingArea: {
-        height: 200,
+    leftPanel: {
+        flex: '0 0 45%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: theme.spacing(2),
+        overflowY: 'auto',
+    },
+    rightPanel: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: theme.spacing(2),
+    },
+    recordingCard: {
+        padding: theme.spacing(3),
+        height: '400px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -75,35 +92,50 @@ const useStyles = makeStyles((theme) => ({
         transition: 'all 0.3s',
         position: 'relative',
         overflow: 'hidden',
+        borderRadius: 1,
+        backgroundColor: '#fff',
         '&:hover': {
-            backgroundColor: theme.palette.action.hover,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
         },
     },
-    recordingAreaActive: {
-        backgroundColor: '#ffebee',
+    recordingCardActive: {
+        backgroundColor: '#fff5f5',
         cursor: 'default',
-        '&:hover': {
-            backgroundColor: '#ffebee',
-        },
     },
-    recordingAreaComplete: {
-        backgroundColor: '#e8f5e9',
+    recordingCardComplete: {
+        backgroundColor: '#f0f9f4',
         cursor: 'default',
-        '&:hover': {
-            backgroundColor: '#e8f5e9',
-        },
     },
     progressBar: {
         position: 'absolute',
         bottom: 0,
         left: 0,
-        right: 0,
         height: '100%',
-        backgroundColor: 'rgba(244, 67, 54, 0.2)',
+        backgroundColor: 'rgba(244, 67, 54, 0.1)',
         transition: 'width 1s linear',
     },
+    waveformContainer: {
+        position: 'absolute',
+        bottom: 20,
+        left: 0,
+        right: 0,
+        height: 40,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        gap: 2,
+        padding: theme.spacing(0, 2),
+        zIndex: 1,
+    },
+    waveformBar: {
+        width: 3,
+        minHeight: 4,
+        backgroundColor: '#1976d2',
+        borderRadius: 1,
+        transition: 'height 0.1s ease',
+    },
     micIcon: {
-        fontSize: 64,
+        fontSize: 80,
         marginBottom: theme.spacing(2),
     },
     micIconRecording: {
@@ -113,25 +145,97 @@ const useStyles = makeStyles((theme) => ({
     micIconComplete: {
         color: theme.palette.success.main,
     },
-    controlButtons: {
+    '@keyframes pulse': {
+        '0%, 100%': {
+            opacity: 1,
+        },
+        '50%': {
+            opacity: 0.5,
+        },
+    },
+    timeDisplay: {
+        fontSize: 36,
+        fontWeight: 700,
+        marginTop: theme.spacing(1),
+    },
+    controlsCard: {
+        padding: theme.spacing(2),
+        borderRadius: 1,
+    },
+    settingsCard: {
+        padding: theme.spacing(2),
+        borderRadius: 1,
+    },
+    transcriptionCard: {
+        padding: theme.spacing(2),
+        borderRadius: 1,
+        flex: 1,
         display: 'flex',
-        gap: theme.spacing(1),
+        flexDirection: 'column',
+        backgroundColor: '#fff',
+    },
+    transcriptionHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing(2),
+    },
+    transcriptionTextarea: {
+        flex: 1,
+        border: '2px solid #e0e0e0',
+        borderRadius: 1,
+        padding: theme.spacing(2),
+        fontSize: 16,
+        lineHeight: 1.6,
+        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+        resize: 'none',
+        '&:focus': {
+            outline: 'none',
+            borderColor: '#1976d2',
+        },
+    },
+    transcriptionEmpty: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#999',
+        border: '2px dashed #e0e0e0',
+        borderRadius: 1,
+        padding: theme.spacing(4),
+    },
+    actionButtons: {
+        display: 'flex',
+        gap: theme.spacing(2),
         marginTop: theme.spacing(2),
     },
     consentBox: {
         backgroundColor: '#e3f2fd',
         border: '1px solid #90caf9',
-        borderRadius: theme.spacing(1),
+        borderRadius: 1,
         padding: theme.spacing(2),
-        marginBottom: theme.spacing(2),
     },
-    timeDisplay: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginTop: theme.spacing(1),
+    recordingsList: {
+        maxHeight: 150,
+        overflowY: 'auto',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-    errorAlert: {
-        marginBottom: theme.spacing(2),
+    statsCard: {
+        padding: theme.spacing(2),
+        borderRadius: 1,
+        backgroundColor: '#fff',
+        display: 'flex',
+        justifyContent: 'space-around',
+    },
+    statItem: {
+        textAlign: 'center',
+    },
+    historyToggle: {
+        borderRadius: 1,
     },
 }));
 
@@ -147,26 +251,46 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
     const [saveForTraining, setSaveForTraining] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [error, setError] = useState(null);
-    const userAccount = JSON.parse(localStorage.getItem('user_account'));
-    console.log(userAccount.id);
+    const [modelSizeSelect, setModelSizeSelect] = useState("small");
+    const [languageSelect, setLanguageSelect] = useState("en");
+    const [isPaused, setIsPaused] = useState(false);
+    const [audioLevels, setAudioLevels] = useState(Array(40).fill(0));
+    const [showHistory, setShowHistory] = useState(false);
+
+    const [accumulatedTranscription, setAccumulatedTranscription] = useState("");
+    const [recordingCount, setRecordingCount] = useState(0);
+    const [totalRecordingTime, setTotalRecordingTime] = useState(0);
+    const [recordingHistory, setRecordingHistory] = useState([]);
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const timerRef = useRef(null);
     const audioPlayerRef = useRef(null);
     const streamRef = useRef(null);
+    const audioContextRef = useRef(null);
+    const analyserRef = useRef(null);
+    const dataArrayRef = useRef(null);
+    const animationFrameRef = useRef(null);
 
-    const MAX_RECORDING_TIME = 180; // 3 minutes
+    const MAX_RECORDING_TIME = 180 * 20;
 
     useEffect(() => {
         return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-            }
-            if (audioUrl) URL.revokeObjectURL(audioUrl);
+            cleanupResources();
         };
-    }, [audioUrl]);
+    }, []);
+
+    const cleanupResources = () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+        }
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+        }
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+    };
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -179,7 +303,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
             setRecordingTime(prev => {
                 const newTime = prev + 1;
                 setTimeLeft(MAX_RECORDING_TIME - newTime);
-
                 if (newTime >= MAX_RECORDING_TIME) {
                     stopRecording();
                     return prev;
@@ -196,11 +319,80 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         }
     };
 
+    const startAudioAnalysis = (stream) => {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioContextRef.current = new AudioContext();
+            analyserRef.current = audioContextRef.current.createAnalyser();
+            const source = audioContextRef.current.createMediaStreamSource(stream);
+
+            source.connect(analyserRef.current);
+            analyserRef.current.fftSize = 128;
+            const bufferLength = analyserRef.current.frequencyBinCount;
+            dataArrayRef.current = new Uint8Array(bufferLength);
+
+            const updateWaveform = () => {
+                if (!analyserRef.current) return;
+
+                analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+
+                if (!isPaused && isRecording) {
+                    const levels = [];
+                    const step = Math.floor(dataArrayRef.current.length / 40);
+
+                    for (let i = 0; i < 40; i++) {
+                        const value = dataArrayRef.current[i * step] || 0;
+                        const height = Math.max(4, (value / 255) * 40);
+                        levels.push(height);
+                    }
+
+                    setAudioLevels(levels);
+                }
+
+                animationFrameRef.current = requestAnimationFrame(updateWaveform);
+            };
+
+            updateWaveform();
+        } catch (err) {
+            console.error('Error starting audio analysis:', err);
+        }
+    };
+
+    const stopAudioAnalysis = () => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+        setAudioLevels(Array(40).fill(0));
+    };
+
+    const pauseRecording = () => {
+        if (mediaRecorderRef.current && isRecording && !isPaused) {
+            mediaRecorderRef.current.pause();
+            setIsPaused(true);
+            stopTimer();
+        }
+    };
+
+    const resumeRecording = () => {
+        if (mediaRecorderRef.current && isRecording && isPaused) {
+            mediaRecorderRef.current.resume();
+            setIsPaused(false);
+            startTimer();
+        }
+    };
+
     const startRecording = async () => {
         try {
             setError(null);
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
+
+            startAudioAnalysis(stream);
 
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
@@ -223,7 +415,10 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
 
                 if (streamRef.current) {
                     streamRef.current.getTracks().forEach(track => track.stop());
+                    streamRef.current = null;
                 }
+
+                stopAudioAnalysis();
             };
 
             mediaRecorder.start(100);
@@ -241,7 +436,9 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
+            setIsPaused(false);
             stopTimer();
+            stopAudioAnalysis();
         }
     };
 
@@ -264,8 +461,9 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         setRecordingTime(0);
         setTimeLeft(MAX_RECORDING_TIME);
         setIsPlaying(false);
+        setIsPaused(false);
         audioChunksRef.current = [];
-        setError(null);
+        stopAudioAnalysis();
     };
 
     const handleTranscribe = async () => {
@@ -275,35 +473,52 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         setError(null);
 
         try {
+            const userAccount = JSON.parse(localStorage.getItem('user_account') || '{}');
             const formData = new FormData();
-
             const audioFile = new File([audioBlob], 'recording.webm', { type: audioBlob.type });
-            formData.append('audio', audioFile);
-            formData.append('model_name', 'medium');
-            formData.append('language', 'en');
-            formData.append('apply_correction', true);
-            formData.append('save_transcript', saveForTraining);
-            formData.append('patient_id', patient?.id || 10);
-            formData.append('encounter_id', patient?.visitId || 20);
-            formData.append('user_id', userAccount?.id);
-            formData.append('facility_id', userAccount?.currentOrganisationUnitId);
 
-            const response = await axios.post(`${audioTranscriptionUrl}/transcribe`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            formData.append('audio', audioFile);
+            formData.append('model_name', modelSizeSelect);
+            formData.append('language', languageSelect);
+            formData.append('apply_correction', 'true');
+            formData.append('save_transcript', saveForTraining.toString());
+            formData.append('patient_id', (patient?.id || 10).toString());
+            formData.append('encounter_id', (patient?.visitId || 20).toString());
+            formData.append('user_id', (userAccount?.id || '').toString());
+            formData.append('facility_id', (userAccount?.currentOrganisationUnitId || '').toString());
+
+            // Make actual API call - replace this with your axios import
+            const response = await fetch(`${audioTranscriptionUrl}/transcribe`, {
+                method: 'POST',
+                body: formData,
             });
 
-            const result = response.data;
-
-            if (onTranscriptionComplete) {
-                onTranscriptionComplete({...result, save_transcript: saveForTraining });
+            if (!response.ok) {
+                throw new Error('Transcription failed');
             }
 
-            setIsModalOpen(false);
+            const result = await response.json();
+            const currentTime = new Date().toLocaleTimeString();
+            const recordingLength = formatTime(recordingTime);
+
+            // Add to accumulated transcription with timestamp
+            const newEntry = `\n[Recording ${recordingCount + 1} - ${currentTime} - Duration: ${recordingLength}]\n${result.corrected_transcription || result.raw_transcription}\n`;
+
+            setAccumulatedTranscription(prev => prev + newEntry);
+            setRecordingCount(prev => prev + 1);
+            setTotalRecordingTime(prev => prev + recordingTime);
+            setRecordingHistory(prev => [...prev, {
+                number: recordingCount + 1,
+                duration: recordingTime,
+                timestamp: currentTime
+            }]);
+
+            // Reset current recording but keep modal open
             resetRecording();
+            setError(null);
+
         } catch (err) {
-            const errorMessage = err.response?.data?.detail || err.message || 'Transcription failed';
+            const errorMessage = err.message || 'Transcription failed';
             setError(`Transcription error: ${errorMessage}`);
             console.error('Transcription error:', err);
         } finally {
@@ -311,29 +526,62 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         }
     };
 
+    const handleUseTranscription = () => {
+        if (!accumulatedTranscription) return;
+
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        if (onTranscriptionComplete) {
+            onTranscriptionComplete({
+                corrected_transcription: accumulatedTranscription,
+                save_transcript: saveForTraining,
+                recording_count: recordingCount,
+                total_duration: totalRecordingTime,
+                formatted_date: formattedDate
+            });
+        }
+
+        // Close modal and reset everything
+        closeModal();
+    };
+
     const closeModal = () => {
         if (isRecording) {
             stopRecording();
         }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-        }
+        cleanupResources();
         setIsModalOpen(false);
+
+        // Reset all state
         resetRecording();
         setError(null);
+        setAccumulatedTranscription("");
+        setRecordingCount(0);
+        setTotalRecordingTime(0);
+        setRecordingHistory([]);
+        setIsTranscribing(false);
+        setSaveForTraining(false);
+        setShowHistory(false);
+    };
+
+    const getRecordingAreaClass = () => {
+        if (isRecording) return `${classes.recordingCard} ${classes.recordingCardActive}`;
+        if (audioBlob) return `${classes.recordingCard} ${classes.recordingCardComplete}`;
+        return classes.recordingCard;
     };
 
     const recordingProgress = (recordingTime / MAX_RECORDING_TIME) * 100;
 
-    const getRecordingAreaClass = () => {
-        if (isRecording) return `${classes.recordingArea} ${classes.recordingAreaActive}`;
-        if (audioBlob) return `${classes.recordingArea} ${classes.recordingAreaComplete}`;
-        return classes.recordingArea;
-    };
-
     return (
         <>
-
             <Tooltip title="Record patient visit note" placement="left">
                 <div
                     style={{
@@ -354,14 +602,6 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                         transition: 'all 0.3s ease',
                         transform: 'scale(1)',
                     }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(33, 150, 243, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(33, 150, 243, 0.3)';
-                    }}
                     onClick={() => setIsModalOpen(true)}
                     aria-label="record"
                 >
@@ -369,207 +609,412 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                 </div>
             </Tooltip>
 
-            {/* Modal Dialog */}
             <Dialog
                 open={isModalOpen}
                 onClose={closeModal}
-                maxWidth="sm"
-                fullWidth
-                classes={{ paper: classes.dialogPaper }}
+                fullScreen
+                className={classes.fullscreenDialog}
             >
-                <DialogTitle className={classes.dialogTitle}>
-                    <Typography variant="h6">Record Patient Visit Note</Typography>
-                    <IconButton onClick={closeModal} size="small">
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-
-                <DialogContent>
-                    {/* Language Selection */}
-                    <FormControl className={classes.formControl}>
-                        <InputLabel>Language</InputLabel>
-                        <Select value="en">
-                            <MenuItem value="en">English</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Model Selection */}
-                    <FormControl className={classes.formControl}>
-                        <InputLabel>Model</InputLabel>
-                        <Select value="medium">
-                            <MenuItem value="tiny">Tiny</MenuItem>
-                            <MenuItem value="base">Base</MenuItem>
-                            <MenuItem value="small">Small</MenuItem>
-                            <MenuItem value="medium">Medium</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Training Consent */}
-                    <Paper className={classes.consentBox} elevation={0}>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={saveForTraining}
-                                    onChange={(e) => setSaveForTraining(e.target.checked)}
-                                    color="primary"
-                                />
-                            }
-                            label={
-                                <Box>
-                                    <Typography variant="body2" style={{ fontWeight: 500 }}>
-                                        Save audio and transcription for training
-                                    </Typography>
-                                    <Typography variant="caption" color="textSecondary">
-                                        We will use your audio recording and transcription to improve our medical
-                                        transcription models. All data is anonymized and handled according to HIPAA
-                                        guidelines. You can opt out at any time.
-                                    </Typography>
-                                </Box>
-                            }
-                        />
-                    </Paper>
-
-                    {/* Error Message */}
-                    {error && (
-                        <Snackbar
-                            open={!!error}
-                            autoHideDuration={6000}
-                            onClose={() => setError(null)}
-                            message={error}
-                            action={
-                                <IconButton
-                                    size="small"
-                                    aria-label="close"
-                                    color="inherit"
-                                    onClick={() => setError(null)}
-                                >
-                                    <CloseIcon fontSize="small" />
-                                </IconButton>
-                            }
-                            className={classes.errorAlert}
-                        />
-                    )}
-
-                    {/* Recording Area */}
-                    <Paper
-                        elevation={2}
-                        className={getRecordingAreaClass()}
-                        onClick={isRecording ? null : (!audioBlob ? startRecording : null)}
-                    >
-                        {/* Progress Bar */}
-                        {isRecording && (
-                            <div
-                                className={classes.progressBar}
-                                style={{ width: `${recordingProgress}%` }}
-                            />
-                        )}
-
-                        {/* Content */}
-                        <Box position="relative" zIndex={10} textAlign="center">
-                            {!isRecording && !audioBlob && (
-                                <>
-                                    <MicIcon className={classes.micIcon} color="action" />
-                                    <Typography variant="body1" color="textSecondary">
-                                        Click to start recording
-                                    </Typography>
-                                </>
-                            )}
-
-                            {isRecording && (
-                                <>
-                                    <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
-                                    <Typography variant="body1" color="error">
-                                        Recording...
-                                    </Typography>
-                                    <Typography variant="h4" color="error" className={classes.timeDisplay}>
-                                        {formatTime(recordingTime)}
-                                    </Typography>
-                                    <Typography variant="caption" color="error">
-                                        Time left: {formatTime(timeLeft)}
-                                    </Typography>
-                                </>
-                            )}
-
-                            {audioBlob && !isRecording && (
-                                <>
-                                    <MicIcon className={`${classes.micIcon} ${classes.micIconComplete}`} />
-                                    <Typography variant="body1" style={{ color: '#2e7d32' }}>
-                                        Recording complete
-                                    </Typography>
-                                    <Typography variant="h5" style={{ color: '#1b5e20', marginTop: 8 }}>
-                                        {formatTime(recordingTime)}
-                                    </Typography>
-                                </>
-                            )}
+                <div className={classes.dialogContent}>
+                    {/* Header */}
+                    <div className={classes.header}>
+                        <Box display="flex" alignItems="center" gap={2}>
+                            <Box>
+                                <Typography variant="h5" style={{ fontWeight: 600, color: "white" }}>
+                                    Transcription
+                                </Typography>
+                            </Box>
                         </Box>
-                    </Paper>
+                        <IconButton onClick={closeModal} style={{ color: 'white' }}>
+                            <CloseIcon />
+                        </IconButton>
+                    </div>
 
-                    {/* Hidden Audio Player */}
-                    {audioUrl && (
-                        <audio
-                            ref={audioPlayerRef}
-                            src={audioUrl}
-                            onEnded={() => setIsPlaying(false)}
-                            style={{ display: 'none' }}
-                        />
-                    )}
+                    {/* Main Content */}
+                    <div className={classes.mainContent}>
 
-                    {/* Controls */}
-                    <Box className={classes.controlButtons}>
-                        {isRecording && (
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                color="secondary"
-                                startIcon={<StopIcon />}
-                                onClick={stopRecording}
+                        <div className={classes.leftPanel}>
+
+                        <Paper elevation={2} className={classes.settingsCard}>
+                                <Typography variant="subtitle2" gutterBottom style={{ fontWeight: 600 }}>
+                                    Settings
+                                </Typography>
+                                <Divider style={{ marginBottom: 12 }} />
+
+                                <FormControl fullWidth size="small" style={{ marginBottom: 12 }}>
+                                    <InputLabel>Language</InputLabel>
+                                    <Select
+                                        value={languageSelect}
+                                        onChange={(e) => setLanguageSelect(e.target.value)}
+                                        disabled
+                                        style={{ borderRadius: 1 }}
+                                    >
+                                        <MenuItem value="en">English</MenuItem>
+                                        <MenuItem value="sw">Swahili</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                {/* <FormControl fullWidth size="small" style={{ marginBottom: 12 }}>
+                                    <InputLabel>Model</InputLabel>
+                                    <Select
+                                        value={modelSizeSelect}
+                                        onChange={(e) => setModelSizeSelect(e.target.value)}
+                                        disabled={isRecording}
+                                        style={{ borderRadius: 1 }}
+                                    >
+                                        <MenuItem value="tiny">Tiny (Fastest)</MenuItem>
+                                        <MenuItem value="base">Base</MenuItem>
+                                        <MenuItem value="small">Small (Recommended)</MenuItem>
+                                        <MenuItem value="medium">Medium (Most Accurate)</MenuItem>
+                                    </Select>
+                                </FormControl> */}
+
+                                <Paper className={classes.consentBox} elevation={0}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={saveForTraining}
+                                                onChange={(e) => setSaveForTraining(e.target.checked)}
+                                                color="primary"
+                                                disabled={isRecording}
+                                            />
+                                        }
+                                        label={
+                                            <Box>
+                                                <Typography variant="body2" style={{ fontWeight: 500 }}>
+                                                    Save audio and transcription for training
+                                                </Typography>
+                                                <Typography variant="caption" color="textSecondary">
+                                                    We will use your audio recording and transcription to improve our medical
+                                                    transcription models. All data is anonymized and handled according to NDPR
+                                                    guidelines. You can opt out at any time.
+                                                </Typography>
+                                            </Box>
+                                        }
+                                    />
+                                </Paper>
+                            </Paper>
+                            
+                            <Paper
+                                elevation={3}
+                                className={getRecordingAreaClass()}
+                                onClick={isRecording ? null : (!audioBlob ? startRecording : null)}
                             >
-                                Stop Recording
-                            </Button>
-                        )}
+                                {isRecording && (
+                                    <div
+                                        className={classes.progressBar}
+                                        style={{ width: `${recordingProgress}%` }}
+                                    />
+                                )}
 
-                        {audioBlob && !isRecording && (
-                            <>
-                                <Button
-                                    variant="contained"
-                                    startIcon={isPlaying ? <PauseIcon /> : <PlayIcon />}
-                                    onClick={togglePlayPause}
-                                >
-                                    {isPlaying ? 'Pause' : 'Play'}
-                                </Button>
+                                {/* {isRecording && !isPaused && (
+                                    <div className={classes.waveformContainer}>
+                                        {audioLevels.map((level, index) => (
+                                            <div
+                                                key={index}
+                                                className={classes.waveformBar}
+                                                style={{ height: `${level}px` }}
+                                            />
+                                        ))}
+                                    </div>
+                                )} */}
 
-                                <Button
-                                    variant="contained"
-                                    startIcon={<ReplayIcon />}
-                                    onClick={resetRecording}
-                                    title="New Recording"
-                                >
-                                    Reset
-                                </Button>
+                                <Box position="relative" zIndex={10} textAlign="center">
+                                    {!isRecording && !audioBlob && (
+                                        <>
+                                            <MicIcon className={classes.micIcon} color="action" />
+                                            <Typography variant="h6" color="textSecondary">
+                                                Click to start recording
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary">
+                                                Maximum: {MAX_RECORDING_TIME / 60} minutes
+                                            </Typography>
+                                        </>
+                                    )}
 
+                                    {isRecording && (
+                                        <>
+                                            <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
+                                            <Typography variant="h6" color="error">
+                                                {isPaused ? 'Recording Paused' : 'Recording...'}
+                                            </Typography>
+                                            <Typography variant="h3" color="error" className={classes.timeDisplay}>
+                                                {formatTime(recordingTime)}
+                                            </Typography>
+                                            {/* <Typography variant="body2" color="error">
+                                                Time remaining: {formatTime(timeLeft)}
+                                            </Typography> */}
+                                        </>
+                                    )}
+
+                                    {audioBlob && !isRecording && (
+                                        <>
+                                            <CheckCircleIcon className={`${classes.micIcon} ${classes.micIconComplete}`} />
+                                            <Typography variant="h6" style={{ color: '#2e7d32' }}>
+                                                Recording Complete
+                                            </Typography>
+                                            <Typography variant="h4" style={{ color: '#1b5e20', marginTop: 8 }}>
+                                                {formatTime(recordingTime)}
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary" style={{ marginTop: 8, display: 'block' }}>
+                                                Ready to transcribe
+                                            </Typography>
+                                        </>
+                                    )}
+                                </Box>
+                            </Paper>
+
+                            {/* Hidden Audio Player */}
+                            {audioUrl && (
+                                <audio
+                                    ref={audioPlayerRef}
+                                    src={audioUrl}
+                                    onEnded={() => setIsPlaying(false)}
+                                    style={{ display: 'none' }}
+                                />
+                            )}
+
+                            {/* Controls */}
+                            <Paper elevation={2} className={classes.controlsCard}>
+                                <Box display="flex" gap={1}>
+                                    {isRecording && (
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                width: "100%",
+                                                justifyContent: "center",
+                                                gap: '8px',
+                                            }}
+                                        >
+                                            {!isPaused ? (
+                                                <Button
+                                                    variant="contained"
+                                                    startIcon={<PauseIcon />}
+                                                    onClick={pauseRecording}
+                                                    color="default"
+                                                    fullWidth
+                                                    style={{ borderRadius: 1, flexGrow: 1 }} 
+                                                >
+                                                    Pause
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="contained"
+                                                    startIcon={<PlayIcon />}
+                                                    onClick={resumeRecording}
+                                                    color="primary"
+                                                    fullWidth
+                                                    style={{ borderRadius: 1, flexGrow: 1 }}
+                                                >
+                                                    Resume
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="contained"
+                                                color="secondary"
+                                                startIcon={<StopIcon />}
+                                                onClick={stopRecording}
+                                                fullWidth
+                                                style={{ borderRadius: 1, flexGrow: 1 }}
+                                            >
+                                                Stop Recording
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {audioBlob && !isRecording && (
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                width: "100%",
+                                                justifyContent: "center",
+                                                gap: '8px',
+                                            }}
+                                        >
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={isPlaying ? <PauseIcon /> : <PlayIcon />}
+                                                onClick={togglePlayPause}
+                                                style={{ borderRadius: 1, flexGrow: 1 }}
+                                                fullWidth
+                                            >
+                                                {isPlaying ? 'Pause' : 'Play'}
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={<ReplayIcon />}
+                                                onClick={resetRecording}
+                                                style={{ borderRadius: 1, flexGrow: 1 }} // flexGrow: 1 makes it take equal space
+                                                fullWidth
+                                            >
+                                                Reset
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                startIcon={isTranscribing ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
+                                                onClick={handleTranscribe}
+                                                disabled={isTranscribing}
+                                                fullWidth
+                                                style={{ flexGrow: 1, borderRadius: 1 }} // flexGrow: 1 makes it take equal space
+                                            >
+                                                {isTranscribing ? 'Transcribing...' : 'Transcribe'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </Box>
+                            </Paper>
+
+                            
+                           
+
+                            
+                            {recordingCount > 0 && (
                                 <Button
+                                    variant="outlined"
+                                    startIcon={<HistoryIcon />}
+                                    onClick={() => setShowHistory(!showHistory)}
+                                    className={classes.historyToggle}
                                     fullWidth
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<SendIcon />}
-                                    onClick={handleTranscribe}
-                                    disabled={isTranscribing}
                                 >
-                                    {isTranscribing ? 'Transcribing...' : 'Transcribe'}
+                                    {showHistory ? 'Hide History' : 'Show History'}
                                 </Button>
-                            </>
-                        )}
-                    </Box>
+                            )}
 
-                    {/* Recording Limit Info */}
-                    {!isRecording && !audioBlob && (
-                        <Typography variant="caption" color="textSecondary" align="center" display="block" style={{ marginTop: 16 }}>
-                            Maximum recording time: 5 minutes
-                        </Typography>
-                    )}
-                </DialogContent>
+                            {/* Stats and History - Only show when toggled */}
+                            {showHistory && recordingCount > 0 && (
+                                <>
+                                    <Paper elevation={2} className={classes.statsCard}>
+                                        <div className={classes.statItem}>
+                                            <Typography variant="h4" style={{ fontWeight: 600, color: '#1976d2' }}>
+                                                {recordingCount}
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary">
+                                                Recordings
+                                            </Typography>
+                                        </div>
+                                        <div className={classes.statItem}>
+                                            <Typography variant="h4" style={{ fontWeight: 600, color: '#2e7d32' }}>
+                                                {formatTime(totalRecordingTime)}
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary">
+                                                Total Duration
+                                            </Typography>
+                                        </div>
+                                    </Paper>
+
+                                    {/* Recording History Chips */}
+                                    {recordingHistory.length > 0 && (
+                                        <Paper elevation={2} style={{ padding: 12, borderRadius: 1 }}>
+                                            <Typography variant="caption" color="textSecondary" gutterBottom>
+                                                Recording History
+                                            </Typography>
+                                            <div className={classes.recordingsList}>
+                                                {recordingHistory.map((rec, idx) => (
+                                                    <Chip
+                                                        key={idx}
+                                                        size="small"
+                                                        label={`#${rec.number} - ${formatTime(rec.duration)}`}
+                                                        color="primary"
+                                                        variant="outlined"
+                                                        style={{ borderRadius: 1 }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </Paper>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+
+                        <div className={classes.rightPanel}>
+                            <Paper elevation={3} className={classes.transcriptionCard}>
+                                <div className={classes.transcriptionHeader}>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <DescriptionIcon color="primary" />
+                                        <Typography variant="h6" style={{ fontWeight: 600 }}>
+                                            Transcription Workspace
+                                        </Typography>
+                                    </Box>
+                                    {accumulatedTranscription && (
+                                        <Chip
+                                            label={`${accumulatedTranscription.length} characters`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                            style={{ borderRadius: 1 }}
+                                        />
+                                    )}
+                                </div>
+
+                                {accumulatedTranscription ? (
+                                    <textarea
+                                        className={classes.transcriptionTextarea}
+                                        value={accumulatedTranscription}
+                                        onChange={(e) => setAccumulatedTranscription(e.target.value)}
+                                        placeholder="Your transcriptions will appear here..."
+                                    />
+                                ) : (
+                                    <div className={classes.transcriptionEmpty}>
+                                        <DescriptionIcon style={{ fontSize: 64, color: '#ccc', marginBottom: 16 }} />
+                                        <Typography variant="h6" color="textSecondary" gutterBottom>
+                                            No transcriptions yet
+                                        </Typography>
+                                        <Typography variant="body2" color="textSecondary" align="center">
+                                            Record audio and click "Transcribe" to see the text here.<br />
+                                            You can record multiple times and all transcriptions will be accumulated.
+                                        </Typography>
+                                    </div>
+                                )}
+
+                                <div className={classes.actionButtons}>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<SummarizeIcon />}
+                                        disabled={!accumulatedTranscription}
+                                        fullWidth
+                                        style={{ borderRadius: 1 }}
+                                    >
+                                        Generate SOAP Summary (Coming Soon)
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        startIcon={<CheckCircleIcon />}
+                                        onClick={handleUseTranscription}
+                                        disabled={!accumulatedTranscription}
+                                        fullWidth
+                                        size="large"
+                                        style={{ fontWeight: 600, borderRadius: 1 }}
+                                    >
+                                        Use This Transcription
+                                    </Button>
+                                </div>
+                            </Paper>
+                        </div>
+                    </div>
+
+
+                    <Snackbar
+                        open={!!error}
+                        autoHideDuration={6000}
+                        onClose={() => setError(null)}
+                        message={error}
+                        action={
+                            <IconButton
+                                size="small"
+                                color="inherit"
+                                onClick={() => setError(null)}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        }
+                    />
+                </div>
             </Dialog>
         </>
     );
 };
-export default AudioRecorder
+
+export default AudioRecorder;

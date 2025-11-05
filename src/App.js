@@ -11,14 +11,14 @@ import PatientDetails from "./main/webapp/jsx/components/Patient/PatientDetails"
 import PatientConsultationHistory from "./main/webapp/jsx/components/History/PatientConsultationHistory";
 import ViewPatientHistory from "./main/webapp/jsx/components/History/ViewPatientHistory";
 import PreviousConsultation from "./main/webapp/jsx/components/Patient/PreviousConsultation";
-//import PatientEditDetail from './main/webapp/jsx/components/Patient/PatientEditDetail';
+// import PatientEditDetail from './main/webapp/jsx/components/Patient/PatientEditDetail';
 
 export default function App() {
   return (
     <Router>
       <div>
         <ToastContainer />
-        
+
         <Switch>
           <Route path="/patient-consultation">
             <ViewPatientHistory />
@@ -36,7 +36,7 @@ export default function App() {
             <PreviousConsultation />
           </Route>
           <Route path="/">
-          <PatientDetails />
+            <Home />
           </Route>
         </Switch>
       </div>

@@ -1,13 +1,3 @@
-// export const token = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWVzdEBsYW1pc3BsdXMub3JnIiwiYXV0aCI6IlN1cGVyIEFkbWluIiwibmFtZSI6Ikd1ZXN0IEd1ZXN0IiwiZXhwIjoxNzU1MTgxNjg1fQ.SjafK7ZGn0nJSPbCeFHgvgFcuz4HPWnHGnhrzyGA2T98xeNUaVNUpCTzei7AaK85TxQ_LCfEXrxtB0C3EoVOOQ"
-// export const url = "/api/v1/";
-// export const apiUrl = "/api/v1/";
-// const devToken = process.env.REACT_APP_API_TOKEN;
-
-// export const url = "http://localhost:8789/api/v1/";
-// export const apiUrl = "http://localhost:8789/api/";
-// export const token = devToken;
-
-
 export const url =
     process.env.NODE_ENV === "development"
         ? "http://localhost:8383/api/v1/"
@@ -20,7 +10,7 @@ export const apiUrl =
 
 export const token =
     process.env.NODE_ENV === "development"
-        ? "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWVzdEBsYW1pc3BsdXMub3JnIiwiYXV0aCI6IlN1cGVyIEFkbWluIiwibmFtZSI6Ikd1ZXN0IEd1ZXN0IiwiZXhwIjoxNzYxNjYyNDczfQ.qeUzKe2uCHspnMlQXH-Su0p5J-7IyVqW2ICVIF_ij9CvBtBkLgNysd1EsJ2pR2MQweah1SV4pfobpPOd6EqooQ"
+        ? "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWVzdEBsYW1pc3BsdXMub3JnIiwiYXV0aCI6IlN1cGVyIEFkbWluIiwibmFtZSI6Ikd1ZXN0IEd1ZXN0IiwiZXhwIjoxNzYyMzU2ODIwfQ.dIWQetINLlRjXPL7iI6jI69-GdgiHjkfNHx1VRQP0ZiAe2PF_c9O9iwr6zv_yQQW9kFnDt8YPK0LpkXaGJC5eQ"
         : new URLSearchParams(window.location.search).get("jwt");
 
 export const audioTranscriptionUrl = process.env.NODE_ENV === "development"

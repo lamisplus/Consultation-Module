@@ -37,6 +37,7 @@ import PostClient from "../Patient/PostClient";
 import useSanitizeEditorInput from "../../../hooks/useSanitizeEditorInput";
 import { DrugInfo } from "../Patient/DrugInfo";
 import AudioRecorder from "../Patient/AudioRecorder";
+import ExportRecords from "../Patient/ExportRecords";
 
 const useStyles = makeStyles(theme => ({
   card: {
@@ -89,6 +90,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+
 const Widget = props => {
   const classes = useStyles();
   const patientObj = props.patientObj ? props.patientObj : {};
@@ -107,18 +109,24 @@ const Widget = props => {
   // Form states
   const [encounterDate, setEncounterDate] = useState(new Date());
   const { handleSubmit, control } = useForm();
+  const currentDate = new Date();
+  const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
   const [body, setBody] = useState("");
+  console.log(body);
   const [signature, setSignature] = useState({ name: "" });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
-  // Dynamic form fields
+
+
   const [inputFields, setInputFields] = useState([
     { complaint: null, onsetDate: "", severity: 0, dateResolved: "" },
   ]);
+
   const [inputFieldsDiagnosis, setInputFieldsDiagnosis] = useState([
     { certainty: "", diagnosis: null, diagnosisOrder: 0 },
   ]);
+
   const [inputFieldsLab, setInputFieldsLab] = useState([
     {
       encounterDate: format(new Date(), "yyyy-MM-dd"),
@@ -131,11 +139,52 @@ const Widget = props => {
 
   const [transcriptionProcess, setTranscriptionProcess] = useState(null)
 
-  const handleTranscriptionComplete = (result) => {
-    setBody(result.corrected_transcription || result.raw_transcription)
-    setTranscriptionProcess(result)
-  };
 
+  // const handleTranscriptionComplete = (result) => {
+  //   const currentDate = new Date();
+  //   const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
+
+  //   // Use HTML line breaks and proper formatting for WYSIWYG
+  //   const transcriptionHeader = `<br><br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
+  //     <strong>============== Transcription at ${formattedDate} ===========</strong>
+  //   </div><br>`;
+
+  //   const transcriptionFooter = `<br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
+  //     <strong>============ END Transcription ====================</strong>
+  //   </div><br>`;
+
+  //   const transcriptionContent = (result.corrected_transcription || result.raw_transcription)
+  //     .replace(/\n/g, '<br>'); // Convert any newlines in transcription to HTML breaks
+
+  //   const fullTranscription = transcriptionHeader + transcriptionContent + transcriptionFooter;
+
+  //   setBody(prevBody => prevBody + fullTranscription);
+  //   setTranscriptionProcess(result);
+  // };
+
+  const handleTranscriptionComplete = (result) => {
+    const currentDate = new Date();
+    const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
+
+    const transcriptionHeader = `<br><br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
+      <strong>============== Voice Transcription - ${formattedDate} ===========</strong><br>
+      <em>Total Recordings: ${result.recording_count} | Duration: ${Math.floor(result.total_duration / 60)}:${(result.total_duration % 60).toString().padStart(2, '0')}</em>
+    </div><br>`;
+
+    const transcriptionFooter = `<br><div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #014d88; margin: 10px 0;">
+      <strong>============ END Transcription ====================</strong>
+    </div><br>`;
+
+    const transcriptionContent = result.corrected_transcription.replace(/\n/g, '<br>');
+    const fullTranscription = transcriptionHeader + transcriptionContent + transcriptionFooter;
+
+    setBody(prevBody => prevBody + fullTranscription);
+
+    // Optionally save if needed
+    if (result.save_transcript) {
+      // Your save logic here
+    }
+  };
 
   const handleSaveUsertranscriptFinalDraft = async (recordingUuid, updates) => {
     try {
@@ -143,7 +192,7 @@ const Widget = props => {
       formData.append('user_edited_transcription', updates.user_edited_transcription);
       formData.append('transcription_text', updates.transcription_text);
       formData.append('user_id', updates.user_id);
-  
+
       const response = await axios.put(
         `${audioTranscriptionUrl}/recordings/${recordingUuid}`,
         formData,
@@ -318,11 +367,18 @@ const Widget = props => {
           user_id: userAccount.id,
           recording_uuid: transcriptionProcess.recording_uuid
         })
+
+        toast.success("Transcription and form saved", {
+          position: toast.POSITION.TOP_RIGHT,
+        });
       } catch (error) {
         console.log("Updating transription failed")
+        toast.error("Error saving Transcription and Form", {
+          position: toast.POSITION.TOP_RIGHT,
+        });
       }
     }
-    
+
     if (!validateInputs()) {
       return;
     }
@@ -416,7 +472,7 @@ const Widget = props => {
           labOrderIndication: null,
         };
 
-       
+
 
         try {
           if (!submitted) {
@@ -452,7 +508,7 @@ const Widget = props => {
           const userAccount = JSON.parse(localStorage.getItem('user_account'));
 
 
-          
+
 
         } catch (labError) {
           toast.warning(
@@ -627,13 +683,13 @@ const Widget = props => {
 
   // Load data on component mount
   useEffect(() => {
-    if (patientObj.id && patientObj.visitId) {
-      loadPharmacyCheck();
-      loadLabCheck();
-      loadLabGroup();
-      loadPriorities();
-      loadPharmacyOrders();
-    }
+    // if (patientObj.id && patientObj.visitId) {
+    //   loadPharmacyCheck();
+    //   loadLabCheck();
+    //   loadLabGroup();
+    //   loadPriorities();
+    //   loadPharmacyOrders();
+    // }
   }, [
     patientObj.id,
     patientObj.visitId,
@@ -735,6 +791,7 @@ const Widget = props => {
                 onEditorChange={newText => setBody(newText)}
               />
               <AudioRecorder onTranscriptionComplete={handleTranscriptionComplete} patient={patientObj} />
+              <ExportRecords />
             </div>
             <br />
 

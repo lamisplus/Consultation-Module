@@ -110,13 +110,10 @@ const Widget = props => {
   const [encounterDate, setEncounterDate] = useState(new Date());
   const { handleSubmit, control } = useForm();
   const currentDate = new Date();
-  const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
   const [body, setBody] = useState("");
   const [signature, setSignature] = useState({ name: "" });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
-
-
 
   const [inputFields, setInputFields] = useState([
     { complaint: null, onsetDate: "", severity: 0, dateResolved: "" },
@@ -167,15 +164,9 @@ const Widget = props => {
       .join(''); // Join back together
 
     const fullTranscription = transcriptionHeader + transcriptionContent + transcriptionFooter;
-
-    console.log('Formatted transcription:', fullTranscription);
-
-    setBody(prevBody => prevBody + fullTranscription);
-
+    setBody(prevBody => prevBody + fullTranscription); // set care card input
     setTranscriptionProcess(result)
-
   };
-
 
 
   const handleSaveUsertranscriptFinalDraft = async (recordingUuid, updates) => {

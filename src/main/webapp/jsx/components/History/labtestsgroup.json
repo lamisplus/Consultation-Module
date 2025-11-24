@@ -1,0 +1,772 @@
+[
+    {
+      "id": 1,
+      "labTests": [
+        {
+          "id": 11,
+          "labTestName": "K+",
+          "unit": "umol/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "labTestName": "Creatinine",
+          "unit": "umol/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "labTestName": "GLUCOSE",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "labTestName": "AST/SGOT",
+          "unit": "u/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "labTestName": "ALT/SGPT",
+          "unit": "u/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "labTestName": "Na+",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            }
+          ]
+        },
+        {
+          "id": 18,
+          "labTestName": "Cl-",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "labTestName": "HCO3",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "labTestName": "BUN",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "labTestName": "Amylase",
+          "unit": "u/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 23,
+          "labTestName": "Total Cholesterol",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            },
+            {
+              "id": 6,
+              "uuid": "75349a48-dc2e-4015-a96c-b9211eddc444",
+              "sampleTypeName": "Serum"
+            }
+          ]
+        },
+        {
+          "id": 24,
+          "labTestName": "LDL",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            },
+            {
+              "id": 6,
+              "uuid": "75349a48-dc2e-4015-a96c-b9211eddc444",
+              "sampleTypeName": "Serum"
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "labTestName": "HDL",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            },
+            {
+              "id": 6,
+              "uuid": "75349a48-dc2e-4015-a96c-b9211eddc444",
+              "sampleTypeName": "Serum"
+            }
+          ]
+        },
+        {
+          "id": 26,
+          "labTestName": "Triglyceride",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            },
+            {
+              "id": 6,
+              "uuid": "75349a48-dc2e-4015-a96c-b9211eddc444",
+              "sampleTypeName": "Serum"
+            }
+          ]
+        },
+        {
+          "id": 27,
+          "labTestName": "HBsAg",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 28,
+          "labTestName": "Pregnancy",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 29,
+          "labTestName": "Malaria Parasite",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 31,
+          "labTestName": "Fasting Glucose (FBS)",
+          "unit": "mmol/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 36,
+          "labTestName": "HCV",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 76,
+          "labTestName": "Urinalysis",
+          "unit": "",
+          "sampleType": []
+        },
+        {
+          "id": 33,
+          "labTestName": "Alkaline Phosphatase (ALP)",
+          "unit": "u/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 21,
+          "labTestName": "Bilirubin",
+          "unit": "umol/l",
+          "sampleType": [
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            },
+            {
+              "id": 6,
+              "uuid": "75349a48-dc2e-4015-a96c-b9211eddc444",
+              "sampleTypeName": "Serum"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 82,
+          "labTestName": "Alanine Aminoransferase (ALT)",
+          "unit": "IU/L",
+          "sampleType": []
+        },
+        {
+          "id": 83,
+          "labTestName": "Aspartate Aminotransferase (AST)",
+          "unit": "IU/L",
+          "sampleType": []
+        },
+        {
+          "id": 84,
+          "labTestName": "Gamma Glutamyl transferase (GGT)",
+          "unit": "IU/L",
+          "sampleType": []
+        },
+        {
+          "id": 85,
+          "labTestName": "Albumin",
+          "unit": "g/l",
+          "sampleType": []
+        }
+      ],
+      "groupName": "Chemistry"
+    },
+    {
+      "id": 2,
+      "labTests": [
+        {
+          "id": 2,
+          "labTestName": "WBC",
+          "unit": "x10^9 c/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "labTestName": "Lymphocytes",
+          "unit": "/mm3",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "labTestName": "Monocytes",
+          "unit": "/mm3",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "labTestName": "Polymorphs",
+          "unit": "/mm3",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "labTestName": "Eosinophils",
+          "unit": "/mm3",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "labTestName": "Basophils",
+          "unit": "/mm3",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "labTestName": "Haemoglobin (HB)",
+          "unit": "g/dl",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "labTestName": "PCV",
+          "unit": "%",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "labTestName": "Platelets",
+          "unit": "x10^9 c/l",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        }
+      ],
+      "groupName": "Haematology"
+    },
+    {
+      "id": 3,
+      "labTests": [
+        {
+          "id": 30,
+          "labTestName": "VIA/Pap Smear",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 2,
+              "uuid": "407b5de2-440b-4b05-8c36-2097e4971cd7",
+              "sampleTypeName": "Cells from the cervix"
+            }
+          ]
+        },
+        {
+          "id": 35,
+          "labTestName": "Sputum Smear",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 37,
+          "labTestName": "Stool microscopy",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 7,
+              "uuid": "22daa308-a55f-4561-a1a7-2b526ffaf6d1",
+              "sampleTypeName": "Stool"
+            }
+          ]
+        },
+        {
+          "id": 75,
+          "labTestName": "HCV antibody",
+          "unit": "+/-",
+          "sampleType": []
+        },
+        {
+          "id": 78,
+          "labTestName": "TB LF LAM",
+          "unit": "+/-",
+          "sampleType": []
+        },
+        {
+          "id": 79,
+          "labTestName": "Malaria smear",
+          "unit": "+/-",
+          "sampleType": []
+        },
+        {
+          "id": 81,
+          "labTestName": "CSF M/C/S",
+          "unit": "+/-",
+          "sampleType": []
+        },
+        {
+          "id": 34,
+          "labTestName": "Total protein",
+          "unit": "g/dl",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        }
+      ],
+      "groupName": "Microbiology"
+    },
+    {
+      "id": 4,
+      "labTests": [
+        {
+          "id": 1,
+          "labTestName": "CD4",
+          "unit": "cells/ul",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "labTestName": "Viral Load",
+          "unit": "copies/ml",
+          "sampleType": [
+            {
+              "id": 4,
+              "uuid": "68d95066-2dcc-454b-b7aa-24528e0a77ab",
+              "sampleTypeName": "Dried blood spot"
+            },
+            {
+              "id": 5,
+              "uuid": "ca951983-1d49-4400-b21b-5c3dd6772811",
+              "sampleTypeName": "Plasma"
+            }
+          ]
+        },
+        {
+          "id": 32,
+          "labTestName": "VDRL",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 3,
+              "uuid": "5b12faac-9591-4afe-b588-af742a985e64",
+              "sampleTypeName": "Cerebrospinal fluid (CSF)"
+            }
+          ]
+        },
+        {
+          "id": 50,
+          "labTestName": "Visitect CD4",
+          "unit": "cells/ul",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 69,
+          "labTestName": "Serum crAg",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            },
+            {
+              "id": 6,
+              "uuid": "75349a48-dc2e-4015-a96c-b9211eddc444",
+              "sampleTypeName": "Serum"
+            }
+          ]
+        },
+        {
+          "id": 70,
+          "labTestName": "CSF crAg",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 3,
+              "uuid": "5b12faac-9591-4afe-b588-af742a985e64",
+              "sampleTypeName": "Cerebrospinal fluid (CSF)"
+            }
+          ]
+        }
+      ],
+      "groupName": "Others"
+    },
+    {
+      "id": 5,
+      "labTests": [
+        {
+          "id": 51,
+          "labTestName": "TB-LAM",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 65,
+          "labTestName": "Gene Xpert",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 66,
+          "labTestName": "Chest X-ray",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 68,
+          "labTestName": "Others",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 71,
+          "labTestName": "LF-LAM",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 8,
+              "uuid": "9b70ce6e-60c8-4e37-bcd5-20a402cc1e64",
+              "sampleTypeName": "Urine"
+            }
+          ]
+        },
+        {
+          "id": 72,
+          "labTestName": "TrueNAT",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 9,
+              "uuid": "108cb7fd-6d43-4942-beb2-d412214503ab",
+              "sampleTypeName": "Sputum"
+            }
+          ]
+        },
+        {
+          "id": 73,
+          "labTestName": "TB LAMP",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 9,
+              "uuid": "108cb7fd-6d43-4942-beb2-d412214503ab",
+              "sampleTypeName": "Sputum"
+            }
+          ]
+        },
+        {
+          "id": 67,
+          "labTestName": "Clinical evaluation only",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 64,
+          "labTestName": "AFB smear microscopy",
+          "unit": "+/-",
+          "sampleType": [
+            {
+              "id": 1,
+              "uuid": "71161349-6c5b-4a77-b27e-9a0c836d858a",
+              "sampleTypeName": "Blood"
+            }
+          ]
+        },
+        {
+          "id": 86,
+          "labTestName": "Cobas",
+          "unit": "+/-",
+          "sampleType": []
+        }
+      ],
+      "groupName": "TB Tests"
+    },
+    {
+      "id": 6,
+      "labTests": [
+        {
+          "id": 77,
+          "labTestName": "Cytology",
+          "unit": "",
+          "sampleType": []
+        }
+      ],
+      "groupName": "Histology"
+    }
+  ]

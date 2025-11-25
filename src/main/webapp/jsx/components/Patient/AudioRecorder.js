@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 import {
     Dialog,
-    DialogContent,
     IconButton,
     Select,
     MenuItem,
@@ -19,6 +18,10 @@ import {
     Divider,
     Chip,
     CircularProgress,
+    Tabs,
+    Tab,
+    Fade,
+    useMediaQuery,
 } from '@material-ui/core';
 import {
     Close as CloseIcon,
@@ -29,20 +32,160 @@ import {
     Send as SendIcon,
     Replay as ReplayIcon,
     Description as DescriptionIcon,
-    Assessment as SummarizeIcon,
     CheckCircle as CheckCircleIcon,
     History as HistoryIcon,
+    Refresh as RefreshIcon,
+    CloudUpload as CloudUploadIcon,
+    DeleteOutline as DeleteOutlineIcon,
+    AssignmentTurnedIn as AssignmentTurnedInIcon,
 } from '@material-ui/icons';
+import axios from 'axios';
 import { audioTranscriptionUrl } from '../../../api';
 
-const useStyles = makeStyles((theme) => ({
 
+class WavEncoder {
+    constructor(sampleRate = 16000, numChannels = 1, bitDepth = 16) {
+        this.sampleRate = sampleRate;
+        this.numChannels = numChannels;
+        this.bitDepth = bitDepth;
+    }
+
+    floatTo16BitPCM(float32Array) {
+        const int16Array = new Int16Array(float32Array.length);
+        for (let i = 0; i < float32Array.length; i++) {
+            const s = Math.max(-1, Math.min(1, float32Array[i]));
+            int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        return int16Array;
+    }
+
+    writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    encode(audioBuffer) {
+        const numOfChan = this.numChannels;
+        const length = audioBuffer.length * numOfChan * 2 + 44;
+        const buffer = new ArrayBuffer(length);
+        const view = new DataView(buffer);
+        let pos = 0;
+
+        this.writeString(view, pos, 'RIFF'); pos += 4;
+        view.setUint32(pos, length - 8, true); pos += 4;
+        this.writeString(view, pos, 'WAVE'); pos += 4;
+        this.writeString(view, pos, 'fmt '); pos += 4;
+        view.setUint32(pos, 16, true); pos += 4;
+        view.setUint16(pos, 1, true); pos += 2;
+        view.setUint16(pos, numOfChan, true); pos += 2;
+        view.setUint32(pos, this.sampleRate, true); pos += 4;
+        view.setUint32(pos, this.sampleRate * numOfChan * 2, true); pos += 4;
+        view.setUint16(pos, numOfChan * 2, true); pos += 2;
+        view.setUint16(pos, 16, true); pos += 2;
+        this.writeString(view, pos, 'data'); pos += 4;
+        view.setUint32(pos, length - pos - 4, true); pos += 4;
+
+        const int16 = this.floatTo16BitPCM(audioBuffer);
+        for (let i = 0; i < int16.length; i++, pos += 2) {
+            view.setInt16(pos, int16[i], true);
+        }
+
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
+}
+
+class AudioProcessor {
+    constructor(sampleRate = 16000) {
+        this.sampleRate = sampleRate;
+        this.audioContext = null;
+        this.audioInput = null;
+        this.scriptProcessor = null;
+        this.recordingBuffers = [];
+        this.isRecording = false;
+        this.isPaused = false;
+        this.wavEncoder = new WavEncoder(sampleRate, 1, 16);
+    }
+
+    async initialize(stream) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+            sampleRate: this.sampleRate
+        });
+
+        this.audioInput = this.audioContext.createMediaStreamSource(stream);
+        const bufferSize = 4096;
+        this.scriptProcessor = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
+
+        this.scriptProcessor.onaudioprocess = (e) => {
+            if (!this.isRecording || this.isPaused) return;
+            const inputData = e.inputBuffer.getChannelData(0);
+            this.recordingBuffers.push(new Float32Array(inputData));
+        };
+
+        this.audioInput.connect(this.scriptProcessor);
+        this.scriptProcessor.connect(this.audioContext.destination);
+    }
+
+    startRecording() {
+        this.recordingBuffers = [];
+        this.isRecording = true;
+        this.isPaused = false;
+    }
+
+    pauseRecording() {
+        this.isPaused = true;
+    }
+
+    resumeRecording() {
+        this.isPaused = false;
+    }
+
+    stopRecording() {
+        this.isRecording = false;
+        this.isPaused = false;
+
+        if (this.scriptProcessor) {
+            this.scriptProcessor.disconnect();
+            this.scriptProcessor = null;
+        }
+
+        if (this.audioInput) {
+            this.audioInput.disconnect();
+            this.audioInput = null;
+        }
+
+        const totalLength = this.recordingBuffers.reduce((acc, buffer) => acc + buffer.length, 0);
+        const mergedBuffer = new Float32Array(totalLength);
+        let offset = 0;
+
+        for (const buffer of this.recordingBuffers) {
+            mergedBuffer.set(buffer, offset);
+            offset += buffer.length;
+        }
+
+        const wavBlob = this.wavEncoder.encode(mergedBuffer);
+        this.recordingBuffers = [];
+
+        return wavBlob;
+    }
+
+    cleanup() {
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            this.audioContext.close();
+        }
+        this.recordingBuffers = [];
+    }
+}
+
+
+const useStyles = makeStyles((theme) => ({
     fullscreenDialog: {
         '& .MuiDialog-paper': {
             margin: 0,
             maxHeight: '100%',
             width: '100%',
             height: '100%',
+            backgroundColor: '#f4f6f8',
         },
     },
     dialogContent: {
@@ -52,145 +195,181 @@ const useStyles = makeStyles((theme) => ({
         flexDirection: 'column',
     },
     header: {
-        // padding: theme.spacing(2, 3),
-        background: 'linear-gradient(135deg, #004d8a 0%, #0066b3 100%)',
+        backgroundColor: theme.palette.primary.main,
         color: 'white',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        padding: theme.spacing(1, 3),
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        zIndex: theme.zIndex.appBar,
     },
     mainContent: {
         flex: 1,
         display: 'flex',
-        gap: theme.spacing(2),
-        padding: theme.spacing(3),
+        gap: theme.spacing(4),
+        padding: theme.spacing(4),
         overflow: 'hidden',
-        backgroundColor: '#f5f7fa',
+        [theme.breakpoints.down('sm')]: {
+            flexDirection: 'column',
+            padding: theme.spacing(2),
+            gap: theme.spacing(2),
+            overflowY: 'auto',
+        },
     },
     leftPanel: {
-        flex: '0 0 45%',
+        flex: '0 0 40%',
         display: 'flex',
         flexDirection: 'column',
-        gap: theme.spacing(2),
-        overflowY: 'auto',
+        gap: theme.spacing(3),
+        [theme.breakpoints.down('sm')]: {
+            flex: 'none',
+            width: '100%',
+        },
+        overflow: "auto"
     },
     rightPanel: {
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         gap: theme.spacing(2),
+        minHeight: 0,
     },
+
+    customTabs: {
+        backgroundColor: '#fff',
+        borderRadius: theme.shape.borderRadius * 2,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        padding: theme.spacing(0.5),
+        '& .MuiTabs-indicator': {
+            height: '100%',
+            borderRadius: theme.shape.borderRadius * 2,
+            backgroundColor: theme.palette.primary.light,
+            opacity: 0.2,
+        },
+        '& .MuiTab-root': {
+            textTransform: 'none',
+            fontWeight: 600,
+            fontSize: '1rem',
+            minHeight: 48,
+            zIndex: 1,
+            '&.Mui-selected': {
+                color: theme.palette.primary.main,
+            },
+        },
+    },
+
     recordingCard: {
-        padding: theme.spacing(3),
-        height: '400px',
+        padding: theme.spacing(4),
+        height: '350px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        transition: 'all 0.3s',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 1,
+        borderRadius: theme.shape.borderRadius * 3,
         backgroundColor: '#fff',
+        border: '2px solid transparent',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         '&:hover': {
+            borderColor: theme.palette.primary.light,
+            transform: 'translateY(-2px)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
         },
     },
     recordingCardActive: {
-        backgroundColor: '#fff5f5',
+        backgroundColor: '#fff',
+        borderColor: theme.palette.error.light,
+        boxShadow: `0 0 0 4px ${theme.palette.error.light}33`,
         cursor: 'default',
+        '&:hover': { transform: 'none' },
     },
     recordingCardComplete: {
-        backgroundColor: '#f0f9f4',
+        backgroundColor: '#fff',
+        borderColor: theme.palette.success.light,
+        boxShadow: `0 0 0 4px ${theme.palette.success.light}33`,
         cursor: 'default',
+        '&:hover': { transform: 'none' },
     },
-    progressBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        height: '100%',
-        backgroundColor: 'rgba(244, 67, 54, 0.1)',
-        transition: 'width 1s linear',
-    },
-    waveformContainer: {
-        position: 'absolute',
-        bottom: 20,
-        left: 0,
-        right: 0,
-        height: 40,
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        gap: 2,
-        padding: theme.spacing(0, 2),
-        zIndex: 1,
-    },
-    waveformBar: {
-        width: 3,
-        minHeight: 4,
-        backgroundColor: '#1976d2',
-        borderRadius: 1,
-        transition: 'height 0.1s ease',
+    uploadCard: {
+        border: `2px dashed ${theme.palette.grey[300]}`,
+        backgroundColor: theme.palette.grey[50],
+        '&:hover': {
+            borderColor: theme.palette.primary.main,
+            backgroundColor: '#fff',
+        },
     },
     micIcon: {
-        fontSize: 80,
+        fontSize: 96,
         marginBottom: theme.spacing(2),
+        color: theme.palette.grey[400],
+        transition: 'color 0.3s',
     },
     micIconRecording: {
         color: theme.palette.error.main,
-        animation: '$pulse 1.5s infinite',
+        animation: '$pulse 1.5s infinite ease-in-out',
     },
     micIconComplete: {
         color: theme.palette.success.main,
     },
     '@keyframes pulse': {
-        '0%, 100%': {
-            opacity: 1,
-        },
-        '50%': {
-            opacity: 0.5,
-        },
+        '0%': { transform: 'scale(1)', opacity: 1 },
+        '50%': { transform: 'scale(1.1)', opacity: 0.8 },
+        '100%': { transform: 'scale(1)', opacity: 1 },
     },
     timeDisplay: {
-        fontSize: 36,
+        fontFamily: 'monospace',
+        fontSize: 48,
         fontWeight: 700,
         marginTop: theme.spacing(1),
+        letterSpacing: '-1px',
     },
-    controlsCard: {
+
+    controlsContainer: {
+        padding: theme.spacing(1),
+    },
+    settingsBox: {
+        backgroundColor: 'transparent',
+        border: `1px solid ${theme.palette.grey[300]}`,
+        borderRadius: theme.shape.borderRadius * 2,
         padding: theme.spacing(2),
-        borderRadius: 1,
     },
-    settingsCard: {
-        padding: theme.spacing(2),
-        borderRadius: 1,
-    },
+
     transcriptionCard: {
-        padding: theme.spacing(2),
-        borderRadius: 1,
+        padding: theme.spacing(3),
+        borderRadius: theme.shape.borderRadius * 3,
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: '#fff',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        overflow: 'hidden',
     },
     transcriptionHeader: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: theme.spacing(2),
+        marginBottom: theme.spacing(3),
     },
     transcriptionTextarea: {
         flex: 1,
-        border: '2px solid #e0e0e0',
-        borderRadius: 1,
-        padding: theme.spacing(2),
-        fontSize: 16,
-        lineHeight: 1.6,
-        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+        border: `1px solid ${theme.palette.grey[200]}`,
+        borderRadius: theme.shape.borderRadius * 2,
+        padding: theme.spacing(3),
+        fontSize: '1.05rem',
+        lineHeight: 1.7,
+        fontFamily: theme.typography.fontFamily,
         resize: 'none',
+        backgroundColor: theme.palette.grey[50],
+        transition: 'all 0.2s',
         '&:focus': {
             outline: 'none',
-            borderColor: '#1976d2',
+            backgroundColor: '#fff',
+            borderColor: theme.palette.primary.main,
+            boxShadow: `0 0 0 3px ${theme.palette.primary.light}33`,
         },
     },
     transcriptionEmpty: {
@@ -199,47 +378,60 @@ const useStyles = makeStyles((theme) => ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#999',
-        border: '2px dashed #e0e0e0',
-        borderRadius: 1,
-        padding: theme.spacing(4),
+        color: theme.palette.text.secondary,
+        backgroundColor: theme.palette.grey[50],
+        border: `2px dashed ${theme.palette.grey[200]}`,
+        borderRadius: theme.shape.borderRadius * 2,
+        padding: theme.spacing(6),
     },
     actionButtons: {
         display: 'flex',
         gap: theme.spacing(2),
-        marginTop: theme.spacing(2),
+        marginTop: theme.spacing(3),
+        paddingTop: theme.spacing(2),
+        borderTop: `1px solid ${theme.palette.grey[100]}`,
     },
-    consentBox: {
-        backgroundColor: '#e3f2fd',
-        border: '1px solid #90caf9',
-        borderRadius: 1,
+    errorAlert: {
+        backgroundColor: theme.palette.error.light,
+        color: theme.palette.error.contrastText,
         padding: theme.spacing(2),
-    },
-    recordingsList: {
-        maxHeight: 150,
-        overflowY: 'auto',
+        borderRadius: theme.shape.borderRadius,
         display: 'flex',
-        flexWrap: 'wrap',
-        gap: theme.spacing(1),
-        padding: theme.spacing(1),
+        alignItems: 'center',
+        gap: theme.spacing(2),
+        fontWeight: 500,
     },
-    statsCard: {
-        padding: theme.spacing(2),
-        borderRadius: 1,
-        backgroundColor: '#fff',
-        display: 'flex',
-        justifyContent: 'space-around',
+
+    largeButton: {
+        padding: theme.spacing(1.5, 3),
+        fontSize: '1rem',
+        borderRadius: theme.shape.borderRadius * 1.5,
+        textTransform: 'none',
+        fontWeight: 700,
+        boxShadow: 'none',
     },
-    statItem: {
-        textAlign: 'center',
+    primaryButton: {
+        backgroundColor: theme.palette.primary.main,
+        color: '#fff',
+        '&:hover': {
+            backgroundColor: theme.palette.primary.dark,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        },
     },
-    historyToggle: {
-        borderRadius: 1,
+    secondaryButton: {
+        backgroundColor: theme.palette.grey[100],
+        color: theme.palette.text.primary,
+        '&:hover': {
+            backgroundColor: theme.palette.grey[200],
+        },
     },
 }));
 
 const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
     const classes = useStyles();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
@@ -248,37 +440,34 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
     const [recordingTime, setRecordingTime] = useState(0);
     const [saveForTraining, setSaveForTraining] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
+    const [isGeneratingSOAP, setIsGeneratingSOAP] = useState(false);
     const [error, setError] = useState(null);
-    const [modelSizeSelect, setModelSizeSelect] = useState("small");
-    const [languageSelect, setLanguageSelect] = useState("en");
+    const [modelSizeSelect] = useState("small");
+    const [languageSelect] = useState("en");
     const [isPaused, setIsPaused] = useState(false);
-    const [audioLevels, setAudioLevels] = useState(Array(40).fill(0));
-    const [showHistory, setShowHistory] = useState(false);
     const [isStartingRecording, setIsStartingRecording] = useState(false);
 
-    const [accumulatedTranscription, setAccumulatedTranscription] = useState("");
-    const [recordingCount, setRecordingCount] = useState(0);
-    const [totalRecordingTime, setTotalRecordingTime] = useState(0);
-    const [recordingHistory, setRecordingHistory] = useState([]);
-    const [returnedTranscription, setReturnedTranscription] = useState(null);
+    const [transcriptionText, setTranscriptionText] = useState("");
+    const [soapNote, setSoapNote] = useState("");
+    const [originalTranscription, setOriginalTranscription] = useState("");
+    const [activeTab, setActiveTab] = useState(0);
 
-    const mediaRecorderRef = useRef(null);
-    const audioChunksRef = useRef([]);
+
+    const [inputMode, setInputMode] = useState(0);
+    const [uploadedFile, setUploadedFile] = useState(null);
+    const [hasPlayedUpload, setHasPlayedUpload] = useState(false);
+    const [hasProcessedUpload, setHasProcessedUpload] = useState(false);
+
+    const audioProcessorRef = useRef(null);
     const timerRef = useRef(null);
     const audioPlayerRef = useRef(null);
     const streamRef = useRef(null);
-    const audioContextRef = useRef(null);
-    const analyserRef = useRef(null);
-    const dataArrayRef = useRef(null);
-    const animationFrameRef = useRef(null);
-    
-    // Sound refs similar to CheckinPatientsAlert.js
+
     const audioRefs = useRef({
         startRecording: new Audio(`${process.env.PUBLIC_URL}/tape-start.wav`),
     });
 
     useEffect(() => {
-        // Preload sounds when component mounts
         Object.values(audioRefs.current).forEach((audio) => {
             audio.load();
         });
@@ -290,39 +479,36 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
 
     const cleanupResources = () => {
         if (timerRef.current) clearInterval(timerRef.current);
-        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
         }
-        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-            audioContextRef.current.close();
+        if (audioProcessorRef.current) {
+            audioProcessorRef.current.cleanup();
         }
         if (audioUrl) URL.revokeObjectURL(audioUrl);
+        if (audioPlayerRef.current) {
+            audioPlayerRef.current.pause();
+            audioPlayerRef.current.currentTime = 0;
+        }
     };
 
     const playSound = (soundKey) => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const audio = audioRefs.current[soundKey];
             if (audio) {
-                // Reset audio to start from beginning
                 audio.currentTime = 0;
-                
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
-                        // Set up event listener for when sound finishes
                         const onEnded = () => {
                             audio.removeEventListener('ended', onEnded);
                             resolve();
                         };
                         audio.addEventListener('ended', onEnded);
-                    }).catch(err => {
-                        console.log('Audio play failed:', err);
-                        reject(err);
-                    });
+                    }).catch(() => resolve());
                 }
             } else {
-                resolve(); // If no audio, resolve immediately
+                resolve();
             }
         });
     };
@@ -346,68 +532,17 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         }
     };
 
-    const startAudioAnalysis = (stream) => {
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioContextRef.current = new AudioContext();
-            analyserRef.current = audioContextRef.current.createAnalyser();
-            const source = audioContextRef.current.createMediaStreamSource(stream);
-
-            source.connect(analyserRef.current);
-            analyserRef.current.fftSize = 128;
-            const bufferLength = analyserRef.current.frequencyBinCount;
-            dataArrayRef.current = new Uint8Array(bufferLength);
-
-            const updateWaveform = () => {
-                if (!analyserRef.current) return;
-
-                analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-
-                if (!isPaused && isRecording) {
-                    const levels = [];
-                    const step = Math.floor(dataArrayRef.current.length / 40);
-
-                    for (let i = 0; i < 40; i++) {
-                        const value = dataArrayRef.current[i * step] || 0;
-                        const height = Math.max(4, (value / 255) * 40);
-                        levels.push(height);
-                    }
-
-                    setAudioLevels(levels);
-                }
-
-                animationFrameRef.current = requestAnimationFrame(updateWaveform);
-            };
-
-            updateWaveform();
-        } catch (err) {
-            console.error('Error starting audio analysis:', err);
-        }
-    };
-
-    const stopAudioAnalysis = () => {
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-        }
-        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-            audioContextRef.current.close();
-            audioContextRef.current = null;
-        }
-        setAudioLevels(Array(40).fill(0));
-    };
-
     const pauseRecording = () => {
-        if (mediaRecorderRef.current && isRecording && !isPaused) {
-            mediaRecorderRef.current.pause();
+        if (audioProcessorRef.current && isRecording && !isPaused) {
+            audioProcessorRef.current.pauseRecording();
             setIsPaused(true);
             stopTimer();
         }
     };
 
     const resumeRecording = () => {
-        if (mediaRecorderRef.current && isRecording && isPaused) {
-            mediaRecorderRef.current.resume();
+        if (audioProcessorRef.current && isRecording && isPaused) {
+            audioProcessorRef.current.resumeRecording();
             setIsPaused(false);
             startTimer();
         }
@@ -417,44 +552,24 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         try {
             setError(null);
             setIsStartingRecording(true);
-            
-            // Play start recording sound and wait for it to finish
+
             await playSound('startRecording');
-            
-            // Now start the actual recording
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    sampleRate: 16000,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
             streamRef.current = stream;
 
-            startAudioAnalysis(stream);
+            audioProcessorRef.current = new AudioProcessor(16000);
+            await audioProcessorRef.current.initialize(stream);
+            audioProcessorRef.current.startRecording();
 
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
-            });
-
-            mediaRecorderRef.current = mediaRecorder;
-            audioChunksRef.current = [];
-
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    audioChunksRef.current.push(event.data);
-                }
-            };
-
-            mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                setAudioBlob(audioBlob);
-                const url = URL.createObjectURL(audioBlob);
-                setAudioUrl(url);
-
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach(track => track.stop());
-                    streamRef.current = null;
-                }
-
-                stopAudioAnalysis();
-            };
-
-            mediaRecorder.start(100);
             setIsRecording(true);
             setIsStartingRecording(false);
             setRecordingTime(0);
@@ -462,17 +577,29 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
         } catch (err) {
             setIsStartingRecording(false);
             setError('Microphone access denied. Please allow microphone permissions and try again.');
-            console.error('Error accessing microphone:', err);
         }
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
+        if (audioProcessorRef.current && isRecording) {
+            if (recordingTime < 30) {
+                setError('Recording must be at least 30 seconds long');
+                return;
+            }
+
+            const wavBlob = audioProcessorRef.current.stopRecording();
+            setAudioBlob(wavBlob);
+            const url = URL.createObjectURL(wavBlob);
+            setAudioUrl(url);
+
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            }
+
             setIsRecording(false);
             setIsPaused(false);
             stopTimer();
-            stopAudioAnalysis();
         }
     };
 
@@ -490,154 +617,263 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
 
     const resetRecording = () => {
         if (audioUrl) URL.revokeObjectURL(audioUrl);
+        if (audioPlayerRef.current) {
+            audioPlayerRef.current.pause();
+            audioPlayerRef.current.currentTime = 0;
+        }
         setAudioBlob(null);
         setAudioUrl(null);
         setRecordingTime(0);
         setIsPlaying(false);
         setIsPaused(false);
-        audioChunksRef.current = [];
-        stopAudioAnalysis();
+        setTranscriptionText("");
+        setSoapNote("");
+        setOriginalTranscription("");
+        setActiveTab(0);
+        setUploadedFile(null);
+        setHasPlayedUpload(false);
+        setHasProcessedUpload(false);
+        setError(null);
+    };
+
+    const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) {
+            setError('File size exceeds 50MB limit');
+            return;
+        }
+
+        const supportedExtensions = ['.wav', '.mp3', '.m4a', '.flac', '.ogg', '.aac', '.wma', '.webm'];
+        const fileName = file.name.toLowerCase();
+        const isSupported = supportedExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!isSupported) {
+            setError('Unsupported audio format. Please upload WAV, MP3, M4A, FLAC, OGG, AAC, WMA, or WEBM files.');
+            return;
+        }
+
+        setError(null);
+        setUploadedFile(file);
+        setHasPlayedUpload(false);
+        setHasProcessedUpload(false);
+
+        const url = URL.createObjectURL(file);
+        setAudioUrl(url);
+        setAudioBlob(file);
+
+
+        const audio = new Audio(url);
+        audio.addEventListener('loadedmetadata', () => {
+            setRecordingTime(Math.floor(audio.duration));
+        });
+    };
+
+
+    const handleRemoveUpload = () => {
+        if (audioPlayerRef.current) {
+            audioPlayerRef.current.pause();
+            audioPlayerRef.current.currentTime = 0;
+        }
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        setUploadedFile(null);
+        setAudioBlob(null);
+        setAudioUrl(null);
+        setIsPlaying(false);
+        setHasPlayedUpload(false);
+        setHasProcessedUpload(false);
+        setRecordingTime(0);
+        setTranscriptionText("");
+        setSoapNote("");
+        setOriginalTranscription("");
+    };
+
+    const handleUploadPlayPause = () => {
+        if (!audioPlayerRef.current) return;
+
+        if (isPlaying) {
+            audioPlayerRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            audioPlayerRef.current.play();
+            setIsPlaying(true);
+            setHasPlayedUpload(true);
+        }
     };
 
     const handleTranscribe = async () => {
         if (!audioBlob) return;
 
-        setIsTranscribing(true);
         setError(null);
+        setIsTranscribing(true);
+        setIsGeneratingSOAP(true);
 
         try {
             const userAccount = JSON.parse(localStorage.getItem('user_account') || '{}');
             const formData = new FormData();
-            const audioFile = new File([audioBlob], 'recording.webm', { type: audioBlob.type });
+            const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
 
             formData.append('audio', audioFile);
             formData.append('model_name', modelSizeSelect);
             formData.append('language', languageSelect);
             formData.append('apply_correction', 'true');
+            formData.append('enable_diarization', 'true');
             formData.append('save_transcript', saveForTraining.toString());
-            formData.append('location', "OPD-consultation");
+            formData.append('location', "HIV-Care-Card");
             formData.append('patient_id', (patient?.id || 10).toString());
             formData.append('encounter_id', (patient?.visitId || 20).toString());
             formData.append('user_id', (userAccount?.id || '').toString());
             formData.append('facility_id', (userAccount?.currentOrganisationUnitId || '').toString());
 
-            
-            const response = await fetch(`${audioTranscriptionUrl}/transcribe`, {
-                method: 'POST',
-                body: formData,
-            });
 
-            if (!response.ok) {
-                throw new Error('Transcription failed');
+            const transcriptionResponse = await axios.post(
+                `${audioTranscriptionUrl}/transcribe`,
+                formData,
+                {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    timeout: 300000,
+                }
+            );
+
+            const result = transcriptionResponse.data;
+            let transcriptionContent = '';
+
+            if (result?.diarization_enabled && result?.diarized_segments) {
+                transcriptionContent = result.diarized_segments
+                    .map(seg => `[${seg.speaker}]: ${seg.text}`)
+                    .join('\n');
+            } else {
+                transcriptionContent = result?.corrected_transcription || result?.raw_transcription || '';
             }
 
-            const result = await response.json();
-            setReturnedTranscription(result)
-            const currentTime = new Date().toLocaleTimeString();
-            const recordingLength = formatTime(recordingTime);
+            setTranscriptionText(transcriptionContent);
+            setOriginalTranscription(transcriptionContent);
+            setIsTranscribing(false);
 
-            
-            const newEntry = `\n[Recording ${recordingCount + 1} - ${currentTime} - Duration: ${recordingLength}]\n${result.corrected_transcription || result.raw_transcription}\n`;
 
-            setAccumulatedTranscription(prev => prev + newEntry);
-            setRecordingCount(prev => prev + 1);
-            setTotalRecordingTime(prev => prev + recordingTime);
-            setRecordingHistory(prev => [...prev, {
-                number: recordingCount + 1,
-                duration: recordingTime,
-                timestamp: currentTime
-            }]);
+            const soapResponse = await axios.post(
+                `${audioTranscriptionUrl}/soap/generate`,
+                { transcription_text: transcriptionContent },
+                {
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 300000,
+                }
+            );
 
-        
-            resetRecording();
-            setError(null);
+            setSoapNote(soapResponse.data?.soap_note || soapResponse.data || '');
+            setIsGeneratingSOAP(false);
+            setActiveTab(0);
+            if (inputMode === 1) setHasProcessedUpload(true);
 
         } catch (err) {
-            const errorMessage = err.message || 'Transcription failed';
-            setError(`Transcription error: ${errorMessage}`);
-            console.error('Transcription error:', err);
-        } finally {
             setIsTranscribing(false);
+            setIsGeneratingSOAP(false);
+
+            const errorDetail = err.response?.data?.detail || err.response?.data?.message || err.message;
+            setError(`Error: ${errorDetail}`);
         }
     };
 
-    const handleUseTranscription = () => {
-        if (!accumulatedTranscription) return;
+    const handleRegenerateSOAP = async () => {
+        if (!transcriptionText || transcriptionText === originalTranscription) {
+            return;
+        }
 
-        const currentDate = new Date();
-        const formattedDate = currentDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        setError(null);
+        setIsGeneratingSOAP(true);
 
-        if (onTranscriptionComplete) {
-            onTranscriptionComplete({
-                corrected_transcription: accumulatedTranscription,
-                save_transcript: saveForTraining,
-                recording_count: recordingCount,
-                total_duration: totalRecordingTime,
-                formatted_date: formattedDate,
-                recording_uuid: returnedTranscription?.recording_uuid
-            });
+        try {
+            const soapResponse = await axios.post(
+                `${audioTranscriptionUrl}/soap/generate`,
+                { transcription_text: transcriptionText },
+                {
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 300000,
+                }
+            );
+
+            setSoapNote(soapResponse.data?.soap_note || soapResponse.data || '');
+            setOriginalTranscription(transcriptionText);
+            setActiveTab(1);
+            setIsGeneratingSOAP(false);
+
+        } catch (err) {
+            setIsGeneratingSOAP(false);
+            const errorDetail = err.response?.data?.detail || err.response?.data?.message || err.message;
+            setError(`Error generating SOAP: ${errorDetail}`);
+        }
+    };
+
+    const handleUseContent = () => {
+        const contentToUse = activeTab === 0 ? transcriptionText : soapNote;
+        const contentTypeLoaded = activeTab === 0 ? "transcription" : "soapNote";
+        if (onTranscriptionComplete && contentToUse) {
+            onTranscriptionComplete(
+                {
+                    corrected_transcription: contentToUse,
+                    save_transcript: saveForTraining,
+                    recording_count: 1,
+                    total_duration: recordingTime,
+                    formatted_date: new Date().toLocaleString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }),
+                },
+                contentTypeLoaded
+            );
         }
         closeModal();
     };
 
     const closeModal = () => {
-        if (isRecording) {
-            stopRecording();
-        }
+        if (isRecording) stopRecording();
         cleanupResources();
         setIsModalOpen(false);
-
         resetRecording();
-        setError(null);
-        setAccumulatedTranscription("");
-        setRecordingCount(0);
-        setTotalRecordingTime(0);
-        setRecordingHistory([]);
-        setIsTranscribing(false);
-        setSaveForTraining(false);
-        setShowHistory(false);
-        setIsStartingRecording(false);
+        setActiveTab(0);
+        setIsRecording(false)
     };
 
     const getRecordingAreaClass = () => {
         if (isRecording || isStartingRecording) return `${classes.recordingCard} ${classes.recordingCardActive}`;
-        if (audioBlob) return `${classes.recordingCard} ${classes.recordingCardComplete}`;
+        if (audioBlob && inputMode === 0) return `${classes.recordingCard} ${classes.recordingCardComplete}`;
         return classes.recordingCard;
     };
 
+    const isRegenerateDisabled = !transcriptionText || transcriptionText === originalTranscription || isGeneratingSOAP;
+
     return (
         <>
-            <Tooltip title="Record patient visit note" placement="left">
+            <Tooltip title="Record clinical note" placement="top">
                 <div
                     style={{
-                        position: 'fixed',
-                        bottom: '32px',
-                        right: '32px',
+                        position: 'absolute',
+                        bottom: '40px',
+                        right: '24px',
                         zIndex: 1000,
-                        backgroundColor: '#004d8a',
+                        backgroundColor: "#004d8a",
                         color: 'white',
-                        height: '56px',
-                        width: '56px',
+                        height: '45px',
+                        width: '45px',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
-                        transition: 'all 0.3s ease',
-                        transform: 'scale(1)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                     onClick={() => setIsModalOpen(true)}
-                    aria-label="record"
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
                 >
-                    <MicIcon />
+                    <MicIcon style={{ fontSize: '20px' }} />
                 </div>
             </Tooltip>
 
@@ -646,362 +882,406 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                 onClose={closeModal}
                 fullScreen
                 className={classes.fullscreenDialog}
+                TransitionComponent={Fade}
+                transitionDuration={300}
             >
                 <div className={classes.dialogContent}>
-                    {/* Header */}
                     <div className={classes.header}>
                         <Box display="flex" alignItems="center" gap={2}>
-                            <Box>
-                                <Typography variant="h5" style={{ fontWeight: 600, color: "white" }}>
-                                    Transcription
-                                </Typography>
-                            </Box>
+                            <Typography variant="h6" style={{ fontWeight: 700, letterSpacing: '0.5px', color: "white" }}>
+                                Clinical Transcription & SOAP Note Generation
+                            </Typography>
                         </Box>
-                        <IconButton onClick={closeModal} style={{ color: 'white' }}>
+                        <IconButton onClick={closeModal} style={{ color: 'white' }} edge="end">
                             <CloseIcon />
                         </IconButton>
                     </div>
 
-                    {/* Main Content */}
                     <div className={classes.mainContent}>
-
                         <div className={classes.leftPanel}>
-
-                        <Paper elevation={2} className={classes.settingsCard}>
-                                <Typography variant="subtitle2" gutterBottom style={{ fontWeight: 600 }}>
-                                    Settings
-                                </Typography>
-                                <Divider style={{ marginBottom: 12 }} />
-
-                                <FormControl fullWidth size="small" style={{ marginBottom: 12 }}>
-                                    <InputLabel>Language</InputLabel>
-                                    <Select
-                                        value={languageSelect}
-                                        onChange={(e) => setLanguageSelect(e.target.value)}
-                                        disabled
-                                        style={{ borderRadius: 1 }}
-                                    >
-                                        <MenuItem value="en">English</MenuItem>
-                                        <MenuItem value="sw">Swahili</MenuItem>
-                                    </Select>
-                                </FormControl>
-
-                                <Paper className={classes.consentBox} elevation={0}>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={saveForTraining}
-                                                onChange={(e) => setSaveForTraining(e.target.checked)}
-                                                color="primary"
-                                                disabled={isRecording || isStartingRecording}
-                                            />
-                                        }
-                                        label={
-                                            <Box>
-                                                <Typography variant="body2" style={{ fontWeight: 500 }}>
-                                                    Save audio and transcription for training
-                                                </Typography>
-                                                <Typography variant="caption" color="textSecondary">
-                                                    We will use your audio recording and transcription to improve our medical
-                                                    transcription models. All data is anonymized and handled according to NDPR
-                                                    guidelines. You can opt out at any time.
-                                                </Typography>
-                                            </Box>
-                                        }
-                                    />
-                                </Paper>
-                            </Paper>
-
-                            <Paper
-                                elevation={3}
-                                className={getRecordingAreaClass()}
-                                onClick={isRecording || isStartingRecording ? null : (!audioBlob ? startRecording : null)}
+                            <Tabs
+                                value={inputMode}
+                                onChange={(e, val) => { setInputMode(val); resetRecording(); }}
+                                className={classes.customTabs}
+                                variant="fullWidth"
                             >
-                                <Box position="relative" zIndex={10} textAlign="center">
-                                    {!isRecording && !audioBlob && !isStartingRecording && (
-                                        <>
-                                            <MicIcon className={classes.micIcon} color="action" />
-                                            <Typography variant="h6" color="textSecondary">
-                                                Click to start recording
-                                            </Typography>
-                                        </>
-                                    )}
+                                <Tab label="Record Audio" icon={<MicIcon />} iconPosition="start" />
+                                <Tab label="Upload File" icon={<CloudUploadIcon />} iconPosition="start" />
+                            </Tabs>
 
-                                    {isStartingRecording && (
-                                        <>
-                                            <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
-                                            <Typography variant="h6" color="error">
-                                                Starting recording...
-                                            </Typography>
-                                            <Typography variant="body2" color="textSecondary">
-                                                Please wait for the sound to finish
-                                            </Typography>
-                                        </>
-                                    )}
+                            <Fade in={true} timeout={500}>
+                                <Box display="flex" flexDirection="column" gap={3}>
 
-                                    {isRecording && !isStartingRecording && (
-                                        <>
-                                            <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
-                                            <Typography variant="h6" color="error">
-                                                {isPaused ? 'Recording Paused' : 'Recording...'}
-                                            </Typography>
-                                            <Typography variant="h3" color="error" className={classes.timeDisplay}>
-                                                {formatTime(recordingTime)}
-                                            </Typography>
-                                        </>
-                                    )}
-
-                                    {audioBlob && !isRecording && (
-                                        <>
-                                            <CheckCircleIcon className={`${classes.micIcon} ${classes.micIconComplete}`} />
-                                            <Typography variant="h6" style={{ color: '#2e7d32' }}>
-                                                Recording Complete
-                                            </Typography>
-                                            <Typography variant="h4" style={{ color: '#1b5e20', marginTop: 8 }}>
-                                                {formatTime(recordingTime)}
-                                            </Typography>
-                                            <Typography variant="caption" color="textSecondary" style={{ marginTop: 8, display: 'block' }}>
-                                                Ready to transcribe
-                                            </Typography>
-                                        </>
-                                    )}
-                                </Box>
-                            </Paper>
-
-                            {/* Hidden Audio Player */}
-                            {audioUrl && (
-                                <audio
-                                    ref={audioPlayerRef}
-                                    src={audioUrl}
-                                    onEnded={() => setIsPlaying(false)}
-                                    style={{ display: 'none' }}
-                                />
-                            )}
-
-                            {/* Controls */}
-                            <Paper elevation={2} className={classes.controlsCard}>
-                                <Box display="flex" gap={1}>
-                                    {isRecording && (
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                width: "100%",
-                                                justifyContent: "center",
-                                                gap: '8px',
-                                            }}
-                                        >
-                                            {!isPaused ? (
-                                                <Button
-                                                    variant="contained"
-                                                    startIcon={<PauseIcon />}
-                                                    onClick={pauseRecording}
-                                                    color="default"
-                                                    fullWidth
-                                                    style={{ borderRadius: 1, flexGrow: 1 }} 
-                                                >
-                                                    Pause
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    variant="contained"
-                                                    startIcon={<PlayIcon />}
-                                                    onClick={resumeRecording}
+                                    <div className={classes.settingsBox} style={{marginBottom: 20 }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={saveForTraining}
+                                                    onChange={(e) => setSaveForTraining(e.target.checked)}
                                                     color="primary"
-                                                    fullWidth
-                                                    style={{ borderRadius: 1, flexGrow: 1 }}
-                                                >
-                                                    Resume
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant="contained"
-                                                color="secondary"
-                                                startIcon={<StopIcon />}
-                                                onClick={stopRecording}
-                                                fullWidth
-                                                style={{ borderRadius: 1, flexGrow: 1 }}
-                                            >
-                                                Stop Recording
-                                            </Button>
-                                        </div>
-                                    )}
+                                                    disabled={isRecording || isStartingRecording}
+                                                />
+                                            }
+                                            label={
+                                                <Box>
+                                                    <Typography variant="body2" style={{ fontWeight: 600 }}>
+                                                        Contribute to model improvement
+                                                    </Typography>
+                                                    <Typography variant="caption" color="textSecondary">
+                                                        Securely save de-identified audio and transcript for training purposes only.
+                                                    </Typography>
+                                                </Box>
+                                            }
+                                        />
+                                    </div>
 
-                                    {audioBlob && !isRecording && (
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                width: "100%",
-                                                justifyContent: "center",
-                                                gap: '8px',
-                                            }}
-                                        >
-                                            <Button
-                                                variant="outlined"
-                                                startIcon={isPlaying ? <PauseIcon /> : <PlayIcon />}
-                                                onClick={togglePlayPause}
-                                                style={{ borderRadius: 1, flexGrow: 1 }}
-                                                fullWidth
-                                            >
-                                                {isPlaying ? 'Pause' : 'Play'}
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                startIcon={<ReplayIcon />}
-                                                onClick={resetRecording}
-                                                style={{ borderRadius: 1, flexGrow: 1 }}
-                                                fullWidth
-                                            >
-                                                Reset
-                                            </Button>
-                                            <Button
-                                                variant="contained"
-                                                color="primary"
-                                                startIcon={isTranscribing ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
-                                                onClick={handleTranscribe}
-                                                disabled={isTranscribing}
-                                                fullWidth
-                                                style={{ flexGrow: 1, borderRadius: 1 }}
-                                            >
-                                                {isTranscribing ? 'Transcribing...' : 'Transcribe'}
-                                            </Button>
-                                        </div>
-                                    )}
-                                </Box>
-                            </Paper>
+                                    {/* Record Mode */}
+                                    {inputMode === 0 && (
+                                        <>
+                                            <Paper elevation={0} className={getRecordingAreaClass()} onClick={isRecording || isStartingRecording ? null : (!audioBlob ? startRecording : null)}>
+                                                <Box position="relative" zIndex={10} textAlign="center">
+                                                    {!isRecording && !audioBlob && !isStartingRecording && (
+                                                        <>
+                                                            <MicIcon className={classes.micIcon} />
+                                                            <Typography variant="h5" style={{ fontWeight: 600, marginBottom: 8 }}>
+                                                                Tap to Record
+                                                            </Typography>
+                                                            <Typography variant="body2" color="textSecondary">
+                                                                Minimum 30 seconds required for accurate transcription
+                                                            </Typography>
+                                                        </>
+                                                    )}
 
-                            {recordingCount > 0 && (
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<HistoryIcon />}
-                                    onClick={() => setShowHistory(!showHistory)}
-                                    className={classes.historyToggle}
-                                    fullWidth
-                                >
-                                    {showHistory ? 'Hide History' : 'Show History'}
-                                </Button>
-                            )}
+                                                    {isStartingRecording && (
+                                                        <>
+                                                            <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
+                                                            <Typography variant="h6" color="error" style={{ fontWeight: 600 }}>Preparing...</Typography>
+                                                        </>
+                                                    )}
 
-                            {/* Stats and History - Only show when toggled */}
-                            {showHistory && recordingCount > 0 && (
-                                <>
-                                    <Paper elevation={2} className={classes.statsCard}>
-                                        <div className={classes.statItem}>
-                                            <Typography variant="h4" style={{ fontWeight: 600, color: '#1976d2' }}>
-                                                {recordingCount}
-                                            </Typography>
-                                            <Typography variant="caption" color="textSecondary">
-                                                Recordings
-                                            </Typography>
-                                        </div>
-                                        <div className={classes.statItem}>
-                                            <Typography variant="h4" style={{ fontWeight: 600, color: '#2e7d32' }}>
-                                                {formatTime(totalRecordingTime)}
-                                            </Typography>
-                                            <Typography variant="caption" color="textSecondary">
-                                                Total Duration
-                                            </Typography>
-                                        </div>
-                                    </Paper>
+                                                    {isRecording && !isStartingRecording && (
+                                                        <>
+                                                            <MicIcon className={`${classes.micIcon} ${classes.micIconRecording}`} />
+                                                            <Typography variant="h6" color="error" style={{ fontWeight: 600 }}>
+                                                                {isPaused ? 'Recording Paused' : 'Recording in progress'}
+                                                            </Typography>
+                                                            <Typography color="error" className={classes.timeDisplay}>
+                                                                {formatTime(recordingTime)}
+                                                            </Typography>
+                                                            {recordingTime < 30 && (
+                                                                <Typography variant="caption" color="textSecondary" style={{ display: 'block', marginTop: 8 }}>
+                                                                    Keep going for {30 - recordingTime}s more
+                                                                </Typography>
+                                                            )}
+                                                        </>
+                                                    )}
 
-                                    {/* Recording History Chips */}
-                                    {recordingHistory.length > 0 && (
-                                        <Paper elevation={2} style={{ padding: 12, borderRadius: 1 }}>
-                                            <Typography variant="caption" color="textSecondary" gutterBottom>
-                                                Recording History
-                                            </Typography>
-                                            <div className={classes.recordingsList}>
-                                                {recordingHistory.map((rec, idx) => (
-                                                    <Chip
-                                                        key={idx}
-                                                        size="small"
-                                                        label={`#${rec.number} - ${formatTime(rec.duration)}`}
-                                                        color="primary"
-                                                        variant="outlined"
-                                                        style={{ borderRadius: 1 }}
-                                                    />
-                                                ))}
+                                                    {audioBlob && !isRecording && (
+                                                        <>
+                                                            <CheckCircleIcon className={`${classes.micIcon} ${classes.micIconComplete}`} />
+                                                            <Typography variant="h5" style={{ color: theme.palette.success.main, fontWeight: 600 }}>Recording Ready</Typography>
+                                                            <Typography className={classes.timeDisplay} style={{ color: theme.palette.success.main }}>
+                                                                {formatTime(recordingTime)}
+                                                            </Typography>
+                                                        </>
+                                                    )}
+                                                </Box>
+                                            </Paper>
+
+                                            <div className={classes.controlsContainer}>
+                                                {isRecording && (
+                                                    <Box display="flex" gap={2}>
+                                                        {!isPaused ? (
+                                                            <Button variant="contained" className={`${classes.largeButton} ${classes.secondaryButton}`} startIcon={<PauseIcon />} onClick={pauseRecording} fullWidth>
+                                                                Pause
+                                                            </Button>
+                                                        ) : (
+                                                            <Button variant="contained" className={`${classes.largeButton} ${classes.primaryButton}`} startIcon={<PlayIcon />} onClick={resumeRecording} fullWidth>
+                                                                Resume
+                                                            </Button>
+                                                        )}
+                                                        <Button variant="contained" color="secondary" className={classes.largeButton} startIcon={<StopIcon />} onClick={stopRecording} fullWidth disabled={recordingTime < 30}>
+                                                            Stop
+                                                        </Button>
+                                                    </Box>
+                                                )}
+
+                                                {audioBlob && !isRecording && (
+                                                    <Box display="flex" flexDirection="column" gap={3}>
+                                                        <Box display="flex" gap={2}>
+                                                            <Button variant="outlined" className={classes.largeButton} startIcon={isPlaying ? <PauseIcon /> : <PlayIcon />} onClick={togglePlayPause} fullWidth style={{ border: `2px solid ${theme.palette.grey[300]}` }}>
+                                                                {isPlaying ? 'Pause Playback' : 'Preview Audio'}
+                                                            </Button>
+                                                            <Button variant="outlined" color="secondary" className={classes.largeButton} startIcon={<ReplayIcon />} onClick={resetRecording} fullWidth style={{ border: `2px solid ${theme.palette.error.light}`, color: theme.palette.error.main }}>
+                                                                Discard & Retry
+                                                            </Button>
+                                                        </Box>
+                                                        <Button
+                                                            variant="contained"
+                                                            className={`${classes.largeButton} ${classes.primaryButton}`}
+                                                            size="large"
+                                                            startIcon={isTranscribing || isGeneratingSOAP ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
+                                                            onClick={handleTranscribe}
+                                                            disabled={isTranscribing || isGeneratingSOAP}
+                                                            fullWidth
+                                                            style={{ height: 56, marginTop: 20 }}
+                                                        >
+                                                            {isTranscribing ? 'Transcribing Audio...' : isGeneratingSOAP ? 'Generating SOAP Note...' : 'Process Recording'}
+                                                        </Button>
+                                                    </Box>
+                                                )}
                                             </div>
-                                        </Paper>
+                                        </>
                                     )}
-                                </>
-                            )}
+
+
+                                    {inputMode === 1 && (
+                                        <>
+                                            {!uploadedFile ? (
+                                                <Paper elevation={0} className={`${classes.recordingCard} ${classes.uploadCard}`} style={{ marginBottom: 10 }}>
+                                                    <Box position="relative" zIndex={10} textAlign="center">
+                                                        <input
+                                                            accept=".wav,.mp3,.m4a,.flac,.ogg,.aac,.wma,.webm"
+                                                            style={{ display: 'none' }}
+                                                            id="audio-upload"
+                                                            type="file"
+                                                            onChange={handleFileUpload}
+                                                        />
+                                                        <label htmlFor="audio-upload">
+                                                            <Button
+                                                                variant="contained"
+                                                                className={`${classes.largeButton} ${classes.primaryButton}`}
+                                                                component="span"
+                                                                startIcon={<CloudUploadIcon />}
+                                                                style={{ marginBottom: 24 }}
+                                                            >
+                                                                Select Audio File
+                                                            </Button>
+                                                        </label>
+                                                        <Typography variant="body1" style={{ fontWeight: 600, marginBottom: 8 }}>
+                                                            Drag and drop or click to browse
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary" gutterBottom>
+                                                            WAV, MP3, M4A, FLAC, OGG, AAC, WMA, WEBM
+                                                        </Typography>
+                                                        <Typography variant="caption" color="textSecondary" style={{ display: 'block', marginTop: 16 }}>
+                                                            Maximum file size: 50MB
+                                                        </Typography>
+                                                    </Box>
+                                                </Paper>
+                                            ) : (
+                                                <>
+                                                    <Paper elevation={0} className={`${classes.recordingCard} ${classes.recordingCardComplete}`}>
+                                                        <Box position="relative" zIndex={10} textAlign="center" width="100%">
+                                                            <AssignmentTurnedInIcon className={`${classes.micIcon} ${classes.micIconComplete}`} style={{ fontSize: 80 }} />
+                                                            <Typography variant="h6" style={{ color: theme.palette.success.main, fontWeight: 600, marginBottom: 8 }}>
+                                                                File Selected
+                                                            </Typography>
+                                                            <Chip label={uploadedFile.name} variant="outlined" style={{ maxWidth: '90%', marginBottom: 16 }} />
+
+                                                            <Typography className={classes.timeDisplay} style={{ color: theme.palette.success.main, fontSize: 36 }}>
+                                                                {formatTime(recordingTime)}
+                                                            </Typography>
+                                                            {!hasPlayedUpload && (
+                                                                <Typography variant="body2" color="error" style={{ marginTop: 16, fontWeight: 500 }}>
+                                                                    <PlayIcon style={{ verticalAlign: 'middle', marginRight: 4, fontSize: 18 }} />
+                                                                    Please review audio before processing
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
+                                                    </Paper>
+
+
+                                                    <div className={classes.controlsContainer}>
+                                                        <Box display="flex" flexDirection="column" gap={3}>
+                                                            <Box display="flex" gap={2}>
+                                                                <Button
+                                                                    variant="outlined"
+                                                                    className={classes.largeButton}
+                                                                    startIcon={isPlaying ? <PauseIcon /> : <PlayIcon />}
+                                                                    onClick={handleUploadPlayPause}
+                                                                    fullWidth
+                                                                    style={{ border: `2px solid ${theme.palette.grey[300]}`, height: 48 }}
+                                                                >
+                                                                    {isPlaying ? 'Pause' : 'Preview Audio'}
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outlined"
+                                                                    color="secondary"
+                                                                    className={classes.largeButton}
+                                                                    startIcon={<DeleteOutlineIcon />}
+                                                                    onClick={handleRemoveUpload}
+                                                                    fullWidth
+                                                                    style={{ border: `2px solid ${theme.palette.error.light}`, color: theme.palette.error.main, height: 48 }}
+                                                                >
+                                                                    Remove File
+                                                                </Button>
+                                                            </Box>
+                                                            <Button
+                                                                variant="contained"
+                                                                className={`${classes.largeButton} ${classes.primaryButton}`}
+                                                                size="large"
+                                                                startIcon={isTranscribing || isGeneratingSOAP ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
+                                                                onClick={handleTranscribe}
+                                                                disabled={!hasPlayedUpload || isTranscribing || isGeneratingSOAP || hasProcessedUpload}
+                                                                fullWidth
+                                                                style={{ height: 56, fontSize: '1.1rem', marginTop: 20 }}
+                                                            >
+                                                                {isTranscribing ? 'Transcribing...' : isGeneratingSOAP ? 'Generating SOAP...' : hasProcessedUpload ? 'Processing Complete' : 'Process Audio File'}
+                                                            </Button>
+                                                        </Box>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {error && (
+                                        <div className={classes.errorAlert}>
+                                            <CloseIcon fontSize="small" />
+                                            <Typography variant="body2">{error}</Typography>
+                                        </div>
+                                    )}
+
+
+                                </Box>
+                            </Fade>
                         </div>
 
                         <div className={classes.rightPanel}>
-                            <Paper elevation={3} className={classes.transcriptionCard}>
-                                <div className={classes.transcriptionHeader}>
-                                    <Box display="flex" alignItems="center" gap={1}>
-                                        <DescriptionIcon color="primary" />
-                                        <Typography variant="h6" style={{ fontWeight: 600 }}>
-                                            Transcription Workspace
-                                        </Typography>
-                                    </Box>
-                                    {accumulatedTranscription && (
-                                        <Chip
-                                            label={`${accumulatedTranscription.length} characters`}
-                                            size="small"
-                                            color="primary"
-                                            variant="outlined"
-                                            style={{ borderRadius: 1 }}
-                                        />
-                                    )}
-                                </div>
+                            <Paper elevation={0} className={classes.transcriptionCard}>
+                                <Tabs
+                                    value={activeTab}
+                                    onChange={(e, val) => setActiveTab(val)}
+                                    className={classes.customTabs}
+                                    variant="fullWidth"
+                                    style={{ marginBottom: theme.spacing(3), backgroundColor: theme.palette.grey[50] }}
+                                >
+                                    <Tab label="Transcript" icon={<DescriptionIcon />} iconPosition="start" />
+                                    <Tab label="SOAP Note" icon={<AssignmentTurnedInIcon />} iconPosition="start" disabled={!soapNote} />
+                                </Tabs>
 
-                                {accumulatedTranscription ? (
-                                    <textarea
-                                        className={classes.transcriptionTextarea}
-                                        value={accumulatedTranscription}
-                                        onChange={(e) => setAccumulatedTranscription(e.target.value)}
-                                        placeholder="Your transcriptions will appear here..."
-                                    />
-                                ) : (
-                                    <div className={classes.transcriptionEmpty}>
-                                        <DescriptionIcon style={{ fontSize: 64, color: '#ccc', marginBottom: 16 }} />
-                                        <Typography variant="h6" color="textSecondary" gutterBottom>
-                                            No transcriptions yet
-                                        </Typography>
-                                        <Typography variant="body2" color="textSecondary" align="center">
-                                            Record audio and click "Transcribe" to see the text here.<br />
-                                            You can record multiple times and all transcriptions will be accumulated.
-                                        </Typography>
-                                    </div>
-                                )}
+                                <Box flex={1} display="flex" flexDirection="column" style={{ minHeight: 0 }}>
+                                    {activeTab === 0 && (
+                                        <Fade in={activeTab === 0}>
+                                            <Box flex={1} display="flex" flexDirection="column" style={{ minHeight: 0 }}>
+                                                <div className={classes.transcriptionHeader}>
+                                                    <Typography variant="h6" style={{ fontWeight: 700 }}>
+                                                        Generated Transcript
+                                                    </Typography>
+                                                    {transcriptionText && (
+                                                        <Chip
+                                                            label={`${transcriptionText.length} chars`}
+                                                            size="small"
+                                                            style={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                                                        />
+                                                    )}
+                                                </div>
+
+                                                {transcriptionText ? (
+                                                    <textarea
+                                                        className={classes.transcriptionTextarea}
+                                                        value={transcriptionText}
+                                                        onChange={(e) => setTranscriptionText(e.target.value)}
+                                                        placeholder="Transcription output..."
+                                                        spellCheck="false"
+                                                    />
+                                                ) : (
+                                                    <div className={classes.transcriptionEmpty}>
+                                                        <DescriptionIcon style={{ fontSize: 80, color: theme.palette.grey[300], marginBottom: 16 }} />
+                                                        <Typography variant="h6" color="textSecondary" gutterBottom style={{ fontWeight: 600 }}>
+                                                            No transcript waiting
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary" align="center">
+                                                            Record or upload audio and click "Process" to generate text.
+                                                        </Typography>
+                                                    </div>
+                                                )}
+                                            </Box>
+                                        </Fade>
+                                    )}
+
+                                    {activeTab === 1 && (
+                                        <Fade in={activeTab === 1}>
+                                            <Box flex={1} display="flex" flexDirection="column" style={{ minHeight: 0 }}>
+                                                <div className={classes.transcriptionHeader}>
+                                                    <Typography variant="h6" style={{ fontWeight: 700 }}>
+                                                        Structured SOAP Note
+                                                    </Typography>
+                                                    {soapNote && (
+                                                        <Chip
+                                                            label="AI Generated"
+                                                            size="small"
+                                                            color="secondary"
+                                                            variant="outlined"
+                                                            style={{ fontWeight: 600 }}
+                                                        />
+                                                    )}
+                                                </div>
+
+                                                {soapNote ? (
+                                                    <textarea
+                                                        className={classes.transcriptionTextarea}
+                                                        value={soapNote}
+                                                        onChange={(e) => setSoapNote(e.target.value)}
+                                                        placeholder="SOAP note output..."
+                                                        spellCheck="false"
+                                                    />
+                                                ) : (
+                                                    <div className={classes.transcriptionEmpty}>
+                                                        <AssignmentTurnedInIcon style={{ fontSize: 80, color: theme.palette.grey[300], marginBottom: 16 }} />
+                                                        <Typography variant="h6" color="textSecondary" gutterBottom style={{ fontWeight: 600 }}>
+                                                            SOAP Note Not Generated
+                                                        </Typography>
+                                                    </div>
+                                                )}
+                                            </Box>
+                                        </Fade>
+                                    )}
+                                </Box>
 
                                 <div className={classes.actionButtons}>
                                     <Button
                                         variant="contained"
-                                        color="primary"
+                                        className={`${classes.largeButton} ${classes.primaryButton}`}
                                         startIcon={<CheckCircleIcon />}
-                                        onClick={handleUseTranscription}
-                                        disabled={!accumulatedTranscription}
+                                        onClick={handleUseContent}
+                                        disabled={!transcriptionText && !soapNote}
                                         fullWidth
                                         size="large"
-                                        style={{ fontWeight: 600, borderRadius: 1 }}
                                     >
-                                        Use This Transcription
+                                        Confirm & Use {activeTab === 0 ? 'Transcript' : 'SOAP Note'}
                                     </Button>
+                                    {activeTab === 0 && (
+                                        <Button
+                                            variant="outlined"
+                                            color="primary"
+                                            className={classes.largeButton}
+                                            startIcon={isGeneratingSOAP ? <CircularProgress size={20} /> : <RefreshIcon />}
+                                            onClick={handleRegenerateSOAP}
+                                            disabled={isRegenerateDisabled}
+                                            fullWidth
+                                            size="large"
+                                            style={{ border: `2px solid ${theme.palette.primary.main}` }}
+                                        >
+                                            {isGeneratingSOAP ? 'Regenerating...' : 'Regenerate SOAP Note'}
+                                        </Button>
+                                    )}
                                 </div>
                             </Paper>
                         </div>
                     </div>
-
-                    <Snackbar
-                        open={!!error}
-                        autoHideDuration={6000}
-                        onClose={() => setError(null)}
-                        message={error}
-                        action={
-                            <IconButton
-                                size="small"
-                                color="inherit"
-                                onClick={() => setError(null)}
-                            >
-                                <CloseIcon fontSize="small" />
-                            </IconButton>
-                        }
-                    />
                 </div>
             </Dialog>
+
+            {audioUrl && (
+                <audio
+                    ref={audioPlayerRef}
+                    src={audioUrl}
+                    onEnded={() => setIsPlaying(false)}
+                    style={{ display: 'none' }}
+                />
+            )}
         </>
     );
 };

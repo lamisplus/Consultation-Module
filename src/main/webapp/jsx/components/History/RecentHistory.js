@@ -33,11 +33,15 @@ import * as moment from "moment";
 import _ from "lodash";
 import VitalsCard from "../Consultation/VitalsCard";
 import { icd10 } from "./icd-10";
+// import { icd11 } from "./icd-11";
 import PostClient from "../Patient/PostClient";
 import useSanitizeEditorInput from "../../../hooks/useSanitizeEditorInput";
 import { DrugInfo } from "../Patient/DrugInfo";
 import AudioRecorder from "../Patient/AudioRecorder";
 import ExportRecords from "../Patient/ExportRecords";
+import ICD11Search from './ICD11Search';
+import AISuggestionHelper from "./AISuggestionHelper";
+
 
 const useStyles = makeStyles(theme => ({
   card: {
@@ -97,16 +101,11 @@ const Widget = props => {
   const [patientObjs, setpatientObjs] = useState(patientObj);
   const history = useHistory();
 
-  // Module enablement states
   const [isLabEnabled, setIsLabEnabled] = useState(false);
   const [isPharmacyEnabled, setIsPharmacyEnabled] = useState(false);
-
-  // Modal states
   const [pharmacyModal, setPharmacyModal] = useState(false);
   const [pharmacyOrderModal, setPharmacyOrderModal] = useState(false);
   const [modalPost, setModalPost] = useState(false);
-
-  // Form states
   const [encounterDate, setEncounterDate] = useState(new Date());
   const { handleSubmit, control } = useForm();
   const currentDate = new Date();
@@ -116,7 +115,7 @@ const Widget = props => {
   const [submitted, setSubmitted] = useState(false);
 
   const [inputFields, setInputFields] = useState([
-    { complaint: null, onsetDate: "", severity: 0, dateResolved: "" },
+    { complaint: "", onsetDate: "", severity: 0, dateResolved: "" },
   ]);
 
   const [inputFieldsDiagnosis, setInputFieldsDiagnosis] = useState([
@@ -134,37 +133,45 @@ const Widget = props => {
   ]);
   const [transcriptionProcess, setTranscriptionProcess] = useState(null)
 
+  const [presentingComplaints, setPresentingComplaints] = useState([]);
+  const [clinicalDiagnoses, setClinicalDiagnoses] = useState([]);
+  const [pharmacyOrder, setPharmacyOrder] = useState([]);
+  const [labGroups, setLabGroups] = useState([]);
+  const [labTests, setLabTests] = useState([]);
+  const [priorities, setPriorities] = useState([]);
+  const [prevTests, setPrevTests] = useState([]);
+  const [isAddmedication, setIsAddmedication] = useState(false);
+  const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState(null);
+  const [drugsOrdered, setDrugsOrdered] = useState([]);
 
-
-
-  const handleTranscriptionComplete = (result) => {
+  const handleTranscriptionComplete = (result, contentTypeLoaded) => {
     const currentDate = new Date();
     const formattedDate = format(currentDate, "EEEE do MMMM, h:mma");
 
-    
-    const transcriptionHeader = `
+
+    const transcriptionHeader = contentTypeLoaded === "transcription" ? `
         <p>
           <strong>Voice Transcription - ${formattedDate}</strong><br>
           <em>Total Recordings: ${result.recording_count} | Duration: ${Math.floor(result.total_duration / 60)}:${(result.total_duration % 60).toString().padStart(2, '0')}</em>
         </p>
-    `;
+    `: "";
 
-    const transcriptionFooter = `
+    const transcriptionFooter = contentTypeLoaded === "transcription" ? `
         <p>
-        ==============================================<strong>END Transcription</strong>======================================
+        ====<strong>END</strong>=====
         </p>
-    `;
+    `: '';
 
-    
+
     const transcriptionContent = (result.corrected_transcription || '')
       .split('\n')
       .map(line => line.trim())
       .filter(line => line.length > 0)
       .map(line => `<p>${line}</p>`)
-      .join(''); // Join back together
+      .join('');
 
     const fullTranscription = transcriptionHeader + transcriptionContent + transcriptionFooter;
-    setBody(prevBody => prevBody + fullTranscription); // set care card input
+    setBody(prevBody => prevBody + fullTranscription);
     setTranscriptionProcess(result)
   };
 
@@ -194,20 +201,6 @@ const Widget = props => {
   };
 
 
-
-
-  // Data states
-  const [pharmacyOrder, setPharmacyOrder] = useState([]);
-  const [labGroups, setLabGroups] = useState([]);
-  const [labTests, setLabTests] = useState([]);
-  const [priorities, setPriorities] = useState([]);
-  const [prevTests, setPrevTests] = useState([]);
-  const [isAddmedication, setIsAddmedication] = useState(false);
-
-  // Edit pharmacy order state
-  const [editPharmacyOrderValue, setEditPharmacyOrderValue] = useState(null);
-
-  // Toggle functions
   const toggle = () => {
     setPharmacyModal(!pharmacyModal);
   };
@@ -292,7 +285,6 @@ const Widget = props => {
     }
   }, [patientObj.visitId]);
 
-  const [drugsOrdered, setDrugsOrdered] = useState([]);
 
   const fetchPatientDrugOrder = async patientId => {
     try {
@@ -334,10 +326,12 @@ const Widget = props => {
     return Object.values(temp).every(x => x === "");
   };
 
+
+
   const [submittedConsultationId, setSubmittedConsultationId] = useState(0);
   const [submittedLabId, setSubmittedLabId] = useState(0);
   const [submittedLPharmId, setSubmittedPhrmId] = useState(0);
-  // Form submission
+
   const onSubmit = async data => {
 
     const userAccount = JSON.parse(localStorage.getItem('user_account'));
@@ -351,18 +345,13 @@ const Widget = props => {
           recording_uuid: transcriptionProcess.recording_uuid
         })
 
-        // toast.success("Transcription and form saved", {
-        //   position: toast.POSITION.TOP_RIGHT,
-        // });
       } catch (error) {
         console.log("Updating transription failed")
-        // toast.error("Error saving Transcription and Form", {
-        //   position: toast.POSITION.TOP_RIGHT,
-        // });
       }
     }
 
     if (!validateInputs()) {
+      toast.error("Please fill all required fields", { position: toast.POSITION.TOP_CENTER });
       return;
     }
     try {
@@ -631,7 +620,7 @@ const Widget = props => {
 
   const handleAddPharmacyOrder = e => {
     e.preventDefault();
-    setEditPharmacyOrderValue(null); // ← Add this
+    setEditPharmacyOrderValue(null);
     setIsAddmedication(true);
     setPharmacyModal(!pharmacyModal);
   };
@@ -664,6 +653,22 @@ const Widget = props => {
     setModalPost(!modalPost);
   };
 
+
+  const getIcd11Value = (complaintStr) => {
+    if (!complaintStr || typeof complaintStr !== 'string') return null;
+
+
+    const firstSpaceIndex = complaintStr.indexOf(' ');
+    if (firstSpaceIndex === -1) {
+      return { code: complaintStr, desc: '' };
+    }
+
+    return {
+      code: complaintStr.substring(0, firstSpaceIndex),
+      desc: complaintStr.substring(firstSpaceIndex + 1)
+    };
+  };
+
   // Load data on component mount
   useEffect(() => {
     // if (patientObj.id && patientObj.visitId) {
@@ -683,8 +688,33 @@ const Widget = props => {
     loadPharmacyOrders,
   ]);
 
-  // const sanitizedEditorText = useSanitizeEditorInput(body);
-  // useEffect(() => setBody(sanitizedEditorText), [sanitizedEditorText]);
+  const handleAISymptoms = (selectedCodes) => {
+    const newItems = [...presentingComplaints, ...selectedCodes];
+    setPresentingComplaints(newItems);
+    setInputFields(prev => [
+      ...selectedCodes.map(item => ({
+        complaint: `${item.code} ${item.title}`,
+        onsetDate: "",
+        severity: 0,
+        dateResolved: ""
+      })),
+      ...prev,
+    ]);
+  };
+
+  const handleAIDiagnosis = (selectedCodes) => {
+    const newItems = [...clinicalDiagnoses, ...selectedCodes];
+    setInputFieldsDiagnosis(prev => [
+      ...selectedCodes.map(item => ({
+        certainty: "",
+        diagnosis: `${item.code} ${item.title}`,
+        diagnosisOrder: 0,
+      })),
+      ...prev,
+    ]);
+
+    setClinicalDiagnoses(newItems);
+  };
 
   return (
     <Grid
@@ -775,7 +805,7 @@ const Widget = props => {
                 onEditorChange={newText => setBody(newText)}
               />
               <AudioRecorder onTranscriptionComplete={handleTranscriptionComplete} patient={patientObj} />
-              <ExportRecords />
+              {/* <ExportRecords /> */}
             </div>
             <br />
 
@@ -812,32 +842,14 @@ const Widget = props => {
                   <Fragment key={`${inputField}~${index}`}>
                     <Table.Row>
                       <Table.Cell>
-                        <Autocomplete
-                          id="complaint"
-                          getOptionLabel={icd10 =>
-                            `${icd10.code} ${icd10.desc}`
-                          }
-                          disablePortal
-                          options={icd10}
-                          isOptionEqualToValue={(option, value) =>
-                            option.code === value.code
-                          }
-                          noOptionsText={"No Complaints Available"}
-                          renderOption={(props, icd10) => (
-                            <Box component="li" {...props} key={icd10.code}>
-                              {icd10.code} {icd10.desc}
-                            </Box>
-                          )}
-                          renderInput={params => (
-                            <TextField {...params} label="Select complaints" />
-                          )}
-                          value={inputFields.complaint}
-                          onChange={(event, newValue) =>
-                            handleInputChange(
-                              index,
-                              `${newValue.code} ${newValue.desc}`
-                            )
-                          }
+                        <ICD11Search
+                          label="Select Complaint"
+                          fullWidth={true}
+                          value={getIcd11Value(inputField.complaint)}
+                          onChange={(newValue) => {
+                            const stringVal = newValue ? `${newValue.code} ${newValue.desc}` : "";
+                            handleInputChange(index, stringVal);
+                          }}
                         />
                         {errors.complaint && (
                           <span className={classes.error}>
@@ -908,6 +920,7 @@ const Widget = props => {
                     >
                       <Icon name="plus" /> Add More
                     </Button>{" "}
+
                     <Button
                       color="red"
                       size="tiny"
@@ -916,7 +929,14 @@ const Widget = props => {
                       disabled={inputFields.length === 1}
                     >
                       <Icon name="minus" /> Remove
-                    </Button>
+                    </Button>{" "}
+
+                    <AISuggestionHelper
+                      type="symptoms"
+                      soapNote={body}
+                      onCreate={handleAISymptoms}
+                    />
+
                   </Table.HeaderCell>
                 </Table.Row>
               </Table.Footer>
@@ -954,32 +974,14 @@ const Widget = props => {
                   <Fragment key={`${diagInputField}~${diagIndex}`}>
                     <Table.Row>
                       <Table.Cell>
-                        <Autocomplete
-                          id="diagnosis"
-                          getOptionLabel={icd10 =>
-                            `${icd10.code} ${icd10.desc}`
-                          }
-                          disablePortal
-                          options={icd10}
-                          isOptionEqualToValue={(option, value) =>
-                            option.code === value.code
-                          }
-                          noOptionsText={"No Condition"}
-                          renderOption={(props, icd10) => (
-                            <Box component="li" {...props} key={icd10.code}>
-                              {icd10.code} {icd10.desc}
-                            </Box>
-                          )}
-                          renderInput={params => (
-                            <TextField {...params} label="Select conditions" />
-                          )}
-                          value={inputFieldsDiagnosis.diagnosis}
-                          onChange={(event, newValue) =>
-                            handleInputDiagChange(
-                              diagIndex,
-                              `${newValue.code} ${newValue.desc}`
-                            )
-                          }
+                        <ICD11Search
+                          label="Select Condition"
+                          fullWidth={true}
+                          value={getIcd11Value(diagInputField.diagnosis)}
+                          onChange={(newValue) => {
+                            const stringVal = newValue ? `${newValue.code} ${newValue.desc}` : "";
+                            handleInputDiagChange(diagIndex, stringVal);
+                          }}
                         />
                         {errors.diagnosis && (
                           <span className={classes.error}>
@@ -1061,7 +1063,13 @@ const Widget = props => {
                       disabled={inputFieldsDiagnosis.length === 1}
                     >
                       <Icon name="minus" /> Remove
-                    </Button>
+                    </Button>{" "}
+
+                    <AISuggestionHelper
+                      type="diagnosis"
+                      soapNote={body}
+                      onCreate={handleAIDiagnosis}
+                    />
                   </Table.HeaderCell>
                 </Table.Row>
               </Table.Footer>

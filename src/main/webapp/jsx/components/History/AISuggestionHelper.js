@@ -11,7 +11,7 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
 
-    // Configuration based on type
+    
     const config = {
         diagnosis: {
             url: `${audioTranscriptionUrl}/icd/diagnoses`,
@@ -85,7 +85,6 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
 
     return (
         <>
-            {/* 1. The Entrance Button - UNCHANGED */}
             <Button
                 color="violet"
                 title="Suggest ICD-11 diagnosis codes from Patient's Visit Note"
@@ -101,16 +100,16 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
                     </>
                 ) : (
                     <>
-                        <Icon name="magic" />  AI Suggest {currentConfig?.label  === "Presenting Complaints" ? "Complaint ICD Codes": "Symptoms ICD Codes"}
+                        <Icon name="magic" />  AI Suggest {currentConfig?.label === "Presenting Complaints" ? "Complaint ICD Codes" : "Symptoms ICD Codes"}
                     </>
                 )}
             </Button>
 
-    
-            <Modal 
-                show={showModal} 
-                onHide={() => setShowModal(false)} 
-                size="lg" 
+
+            <Modal
+                show={showModal}
+                onHide={() => setShowModal(false)}
+                size="lg"
                 contentClassName="rounded-0 border-0 shadow-lg"
                 centered
                 scrollable
@@ -130,7 +129,7 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
                 <Modal.Body className="p-0 bg-white">
                     {/* Top alert, streamlined */}
                     <div className="px-4 pt-3 pb-2">
-                         <Alert variant="light" className="d-flex align-items-center border rounded-0 py-2 small text-muted">
+                        <Alert variant="light" className="d-flex align-items-center border rounded-0 py-2 small text-muted">
                             <Icon name="info circle" className="me-2" />
                             <span>Based on the SOAP note analysis, the following codes were extracted.</span>
                         </Alert>
@@ -140,14 +139,14 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
                     <div className="list-group list-group-flush border-top">
                         {suggestions.map((item, index) => {
                             const isSelected = selectedItems.some((i) => i.code === item.code);
-                            
+
                             return (
                                 <div
                                     key={index}
                                     onClick={() => toggleSelection(item)}
                                     className={`list-group-item list-group-item-action p-3 border-bottom`}
-                                    style={{ 
-                                        cursor: "pointer", 
+                                    style={{
+                                        cursor: "pointer",
                                         backgroundColor: isSelected ? "#f0f7ff" : "white", // Subtle blue highlight when selected
                                         borderLeft: isSelected ? "4px solid #6435c9" : "4px solid transparent", // Semantic UI Violet hex
                                         transition: "all 0.1s ease-in-out"
@@ -164,7 +163,7 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
                                                     style={{ transform: "scale(1.1)", cursor: "pointer" }}
                                                 />
                                             </div>
-                                            
+
                                             <div>
                                                 <div className="d-flex align-items-center mb-1">
                                                     <span className="badge bg-light text-dark border rounded-0 me-2" style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
@@ -174,7 +173,7 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
                                                         {item.title}
                                                     </span>
                                                 </div>
-                                                
+
                                                 {/* Reasoning - Clean text block */}
                                                 <div className="text-secondary small" style={{ lineHeight: '1.4' }}>
                                                     {item.reasoning}
@@ -205,9 +204,9 @@ const AISuggestionHelper = ({ soapNote, type, onCreate }) => {
                             <strong>{selectedItems.length}</strong> items selected
                         </div>
                         <div className="d-flex gap-2">
-                            <Button 
-                                basic 
-                                color="grey" 
+                            <Button
+                                basic
+                                color="grey"
                                 size="small"
                                 onClick={() => setShowModal(false)}
                                 className="rounded-0 shadow-none"

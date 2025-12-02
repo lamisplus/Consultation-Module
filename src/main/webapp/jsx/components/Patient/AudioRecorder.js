@@ -764,7 +764,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
 
             setSoapNote(soapResponse.data?.soap_note || soapResponse.data || '');
             setIsGeneratingSOAP(false);
-            setActiveTab(0);
+            setActiveTab(1);
             if (inputMode === 1) setHasProcessedUpload(true);
 
         } catch (err) {
@@ -912,7 +912,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                             <Fade in={true} timeout={500}>
                                 <Box display="flex" flexDirection="column" gap={3}>
 
-                                    <div className={classes.settingsBox} style={{marginBottom: 20 }}>
+                                    <div className={classes.settingsBox} style={{ marginBottom: 20 }}>
                                         <FormControlLabel
                                             control={
                                                 <Checkbox
@@ -1241,17 +1241,21 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                 </Box>
 
                                 <div className={classes.actionButtons}>
-                                    <Button
-                                        variant="contained"
-                                        className={`${classes.largeButton} ${classes.primaryButton}`}
-                                        startIcon={<CheckCircleIcon />}
-                                        onClick={handleUseContent}
-                                        disabled={!transcriptionText && !soapNote}
-                                        fullWidth
-                                        size="large"
-                                    >
-                                        Confirm & Use {activeTab === 0 ? 'Transcript' : 'SOAP Note'}
-                                    </Button>
+                                    {
+                                        activeTab === 1 && (
+                                            <Button
+                                                variant="contained"
+                                                className={`${classes.largeButton} ${classes.primaryButton}`}
+                                                startIcon={<CheckCircleIcon />}
+                                                onClick={handleUseContent}
+                                                disabled={!transcriptionText && !soapNote}
+                                                fullWidth
+                                                size="large"
+                                            >
+                                                Confirm & Use {activeTab === 0 ? 'Transcript' : 'SOAP Note'}
+                                            </Button>
+                                        )
+                                    }
                                     {activeTab === 0 && (
                                         <Button
                                             variant="outlined"
@@ -1264,7 +1268,7 @@ const AudioRecorder = ({ onTranscriptionComplete, patient }) => {
                                             size="large"
                                             style={{ border: `2px solid ${theme.palette.primary.main}` }}
                                         >
-                                            {isGeneratingSOAP ? 'Regenerating...' : 'Regenerate SOAP Note'}
+                                            {isGeneratingSOAP ? 'Generating...' : 'Generate SOAP Note'}
                                         </Button>
                                     )}
                                 </div>

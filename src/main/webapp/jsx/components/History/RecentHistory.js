@@ -208,7 +208,7 @@ const Widget = props => {
   const toggleOrder = () => setPharmacyOrderModal(!pharmacyOrderModal);
   const togglePost = () => setModalPost(!modalPost);
 
-  // API calls
+  
   const loadLabCheck = useCallback(async () => {
     try {
       const response = await axios.get(

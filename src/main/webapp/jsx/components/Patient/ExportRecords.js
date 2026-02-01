@@ -21,13 +21,14 @@ import {
     CloudDownload as CloudDownloadIcon,
     GetApp as GetAppIcon,
 } from '@material-ui/icons';
-import { url as baseUrl, audioTranscriptionUrl } from '../../../api';
 import axios from 'axios';
+import {url as baseUrl, audioTranscriptionUrl} from "../../../api";
+
 
 const useStyles = makeStyles((theme) => ({
     floatingButton: {
         position: 'fixed',
-        bottom: '104px', // 32px (AudioRecorder bottom) + 56px (AudioRecorder height) + 16px (gap)
+        bottom: '100px',
         right: '32px',
         zIndex: 1000,
         backgroundColor: '#00796b',
@@ -145,7 +146,7 @@ const ExportRecords = () => {
         } catch (err) {
             console.error('Authentication error:', err);
             throw new Error(
-                err.response?.data?.message || 
+                err.response?.data?.message ||
                 'Authentication failed. Please check your password.'
             );
         }
@@ -168,18 +169,18 @@ const ExportRecords = () => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            
+
             // Extract filename from Content-Disposition header if available
             const contentDisposition = response.headers['content-disposition'];
             let filename = `recordings_export_${new Date().toISOString().slice(0, 10)}.zip`;
-            
+
             if (contentDisposition) {
                 const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
                 if (filenameMatch && filenameMatch[1]) {
                     filename = filenameMatch[1];
                 }
             }
-            
+
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
@@ -190,8 +191,8 @@ const ExportRecords = () => {
         } catch (err) {
             console.error('Export error:', err);
             throw new Error(
-                err.response?.data?.detail || 
-                err.message || 
+                err.response?.data?.detail ||
+                err.message ||
                 'Export failed. Please try again.'
             );
         }
@@ -199,7 +200,7 @@ const ExportRecords = () => {
 
     const handleExport = async () => {
         setError(null);
-        
+
         // Validate password
         if (!password.trim()) {
             setError('Please enter your password');
@@ -228,7 +229,7 @@ const ExportRecords = () => {
             // Step 2: Trigger export
             setIsAuthenticating(false);
             setIsExporting(true);
-            
+
             await triggerExport();
 
             // Success - close modal and reset
@@ -257,7 +258,7 @@ const ExportRecords = () => {
                 <div
                     style={{
                         position: 'fixed',
-                        bottom: '100px',
+                        bottom: '157px',
                         right: '32px',
                         zIndex: 1000,
                         backgroundColor: '#00796b',
@@ -298,8 +299,8 @@ const ExportRecords = () => {
             >
                 <DialogTitle className={classes.dialogTitle}>
                     <Typography variant="h6">Export Recordings</Typography>
-                    <IconButton 
-                        onClick={handleCloseModal} 
+                    <IconButton
+                        onClick={handleCloseModal}
                         size="small"
                         disabled={isAuthenticating || isExporting}
                         style={{ color: 'white' }}
@@ -380,9 +381,9 @@ const ExportRecords = () => {
 
                             {/* Error Message */}
                             {error && (
-                                <Typography 
-                                    color="error" 
-                                    variant="body2" 
+                                <Typography
+                                    color="error"
+                                    variant="body2"
                                     style={{ marginTop: 16 }}
                                 >
                                     {error}
@@ -405,7 +406,7 @@ const ExportRecords = () => {
 
                 {!isAuthenticating && !isExporting && (
                     <DialogActions style={{ padding: '16px 24px' }}>
-                        <Button 
+                        <Button
                             onClick={handleCloseModal}
                             color="default"
                         >

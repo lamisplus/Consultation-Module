@@ -10,12 +10,12 @@ export const apiUrl =
 
 export const token =
     process.env.NODE_ENV === "development"
-        ? "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyZGUtdXNlciIsImF1dGgiOiJTdXBlciBBZG1pbixVc2VyLFJERSIsIm5hbWUiOiJyZGUtdXNlciBsYXN0bmFtZSIsImV4cCI6MTc2NTIxNTE5OX0.tqyOIdkcwQ27Ae8P37b1ady9yBZ6Rs_8J1MhxdDIMUfHocCKXWZMuDBXTwmucFo88ZAXC-4hmaDQP_-GuorvIw"
+        ? "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyZGUtdXNlciIsImF1dGgiOiJTdXBlciBBZG1pbixVc2VyLFJERSIsIm5hbWUiOiJyZGUtdXNlciBsYXN0bmFtZSIsImV4cCI6MTc2OTk4MTY0OX0.odLr1KUkAxh1HApBKUs372lvWhuCEQC67jh90C_e5Q8D9QqWAcUrfN1FCQkDoU2QKj7G_C_4qnnnC40zZeZ-zw"
         : new URLSearchParams(window.location.search).get("jwt");
 
 export const audioTranscriptionUrl = process.env.NODE_ENV === "development"
 
-    ? "http://96.0.40.252:7860/api/v1"
+    ? "http://96.0.47.224:7860/api/v1"
 
-    : "http://96.0.40.252:7860/api/v1";
+    : "http://96.0.47.224:7860/api/v1";
 
